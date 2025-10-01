@@ -12,9 +12,9 @@ PayMCP is a lightweight SDK that helps you add monetization to your MCP-based to
 
 ## Key Features
 
-- **🔧 Simple Integration** - Add `@price(...)` decorators to your MCP tools to enable payments
+- **🔧 Simple Integration** - For Python, add `@price(...)` decorators to your MCP tools. For TypeScript, add a `price` variable in `registerTool()` to enable payments
 - **🔁 Flexible Payment Flows** - Choose between different payment flows (elicit, confirm, progress, etc.)
-- **🔌 Extensible Provider System** - Configure providers as config mappings, instances, or lists with built-in and custom providers
+- **🔌 Built-in and Custom Providers** - Most top payment providers are built in, and you can easily add custom providers
 - **⚙️ Framework Agnostic** - Easy integration with FastMCP or other MCP servers
 - **🎯 Production Ready** - Built for reliability and scale
 
@@ -32,7 +32,6 @@ PayMCP(
     providers={
         "stripe": {"apiKey": "sk_test_..."},
     },
-    payment_flow=PaymentFlow.ELICITATION
 )
 
 # Add pricing to any tool
@@ -47,9 +46,11 @@ def add(a: int, b: int, ctx: Context) -> int:
 PayMCP supports multiple payment flows to fit different use cases:
 
 - **[TWO_STEP](./concepts-and-flows#two_step-flow)** - Split into initiate/confirm steps (default, most compatible)
-- **[ELICITATION](./concepts-and-flows#elicitation-flow)** - Interactive payment during tool execution
-- **[PROGRESS](./concepts-and-flows#progress-flow)** - Background payment with progress updates
+- **[ELICITATION](./concepts-and-flows#elicitation-flow)** - Interactive payment during tool execution (requires elicitation capability from MCP Clients)
+- **[PROGRESS](./concepts-and-flows#progress-flow)** - Background payment with progress updates (requires progress capability from MCP Clients)
 - **[OOB](./concepts-and-flows#oob-flow-coming-soon)** - Out-of-band payment (coming soon)
+
+See the list of clients and their capabilities here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
 ## Supported Providers
 
@@ -82,8 +83,6 @@ PayMCP sits between your MCP tools and payment providers, handling:
 - Payment initiation and confirmation
 - Provider abstraction and failover
 - Flow management (sync/async)
-- Secure hosted deployment model
-- Error handling and retries
 
 ## ⚠️ Critical Security Notice
 

@@ -144,18 +144,6 @@ PayPal supports 25+ currencies including:
 
 See [PayPal's currency support](https://developer.paypal.com/docs/reports/reference/paypal-supported-currencies/) for the complete list.
 
-## Payment Flow
-
-PayPal works best with the **TWO_STEP** flow:
-
-```python
-PayMCP(mcp, providers={"paypal": {...}}, payment_flow=PaymentFlow.TWO_STEP)
-
-@mcp.tool()
-@price(amount=2.99, currency="USD")
-def premium_feature(data: str, ctx: Context) -> str:
-    return f"Premium processing completed for: {data}"
-```
 
 **User Experience:**
 1. User calls tool → Gets PayPal checkout URL

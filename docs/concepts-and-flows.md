@@ -6,7 +6,7 @@ description: Understanding PayMCP architecture and choosing the right payment fl
 
 # Payment Flows
 
-PayMCP provides flexible payment flows to handle different interaction patterns between your MCP tools and users. Choose the flow that best fits your application's needs.
+PayMCP provides flexible payment flows to handle different interaction patterns between your MCP tools and users/agents. Choose the flow that best fits your application's needs.
 
 ## Core Concepts
 
@@ -104,6 +104,8 @@ The `@price` decorator adds payment requirements to your MCP tools without chang
 # Regular MCP tool
 @mcp.tool()
 def analyze_text(text: str, ctx: Context) -> dict:
+    """Tool description"""
+    #Your code goes here
     return {"analysis": "detailed results"}
 
 # Same tool with payment requirement
@@ -119,12 +121,7 @@ The `payment_flow` parameter determines how users interact with your paid tools.
 
 ### TWO_STEP Flow
 
-**Best for:** Most applications, maximum compatibility
-
-The default flow splits payment into two distinct steps:
-
-1. **Initiate**: User calls the tool → Returns payment link + confirmation method
-2. **Confirm**: User pays → Calls confirmation tool → Original tool executes
+The default flow splits your tool into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don’t need to change your function code — just write your tool as usual, and PayMCP will automatically create both tools.
 
 ```python
 PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.TWO_STEP)
@@ -135,12 +132,16 @@ def generate_report(data: str, ctx: Context) -> str:
     return f"Report generated for: {data}"
 ```
 
+Under the hood, PayMCP will replace your `generate_report` tool so that it first returns a payment link, and will automatically add an additional tool `confirm_generate_report_payment` that actually runs your original code after the payment is completed.
+
 **User Experience:**
 ```
-User: "generate_report('sales data')"
-AI: Returns payment link and "confirm_generate_report_payment" method
-User: [Pays] → Calls confirm_generate_report_payment(payment_id)
-AI: Executes generate_report() → Returns actual report
+User: "Get me sales report"
+LLM: tool call → generate_report("sales data")
+MCP server: Returns payment link
+User: [Pays] → "I paid"
+LLM: tool call → confirm_generate_report_payment(payment_id)
+MCP server: Executes generate_report() → Returns actual report
 ```
 
 **Advantages:**
@@ -150,12 +151,10 @@ AI: Executes generate_report() → Returns actual report
 - ✅ Can handle payment failures gracefully
 
 **Disadvantages:**
-- ❌ Requires two API calls
-- ❌ More complex user experience
+- ❌ Doubles the number of tools in your MCP server, which may confuse LLMs. It’s generally not recommended to have more than 3–4 tools in one MCP server.
 
 ### ELICITATION Flow
 
-**Best for:** Interactive applications, real-time tools
 
 Prompts the user for payment during tool execution and waits for completion:
 
@@ -165,32 +164,29 @@ PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.ELICITATION)
 @mcp.tool()
 @price(amount=0.25, currency="USD")
 def quick_analysis(text: str, ctx: Context) -> str:
+    """Tool description"""
+    # Your code goes here
     return f"Analysis: {text} processed successfully"
 ```
 
 **User Experience:**
 ```
-User: "quick_analysis('market trends')"
-AI: Shows payment UI immediately
-User: [Pays via payment link]
-AI: Automatically executes quick_analysis() → Returns result
+User: "Can you quickly analyze current market trends?"
+LLM: tool call → quick_analysis("market trends")
+MCP server: Returns payment link
+User: [Pays] -> Confirm payment
+MCP server: Executes quick_analysis() → Returns result
 ```
 
 **Advantages:**
 - ✅ Single interaction
 - ✅ Seamless user experience
 - ✅ Immediate execution after payment
-- ✅ Works with hosted payment pages
 
 **Disadvantages:**
-- ❌ Requires MCP client support for elicitation (coming in MCP spec)
-- ❌ User must complete payment to continue
+- ❌ Requires MCP client support for elicitation. See which clients support it here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
 ### PROGRESS Flow
-
-**Best for:** Long-running operations, background processing
-
-Shows payment link and progress updates while waiting for payment in the background:
 
 ```python
 PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.PROGRESS)
@@ -198,56 +194,34 @@ PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.PROGRESS)
 @mcp.tool()
 @price(amount=2.00, currency="USD")
 def process_large_dataset(dataset_url: str, ctx: Context) -> dict:
-    # This could take several minutes
+    """Tool description"""
+    # Your code goes here
     return {"processing": "completed", "results": "..."}
 ```
 
 **User Experience:**
 ```
-User: "process_large_dataset('http://data.csv')"
-AI: Shows payment link + "Waiting for payment... (15s elapsed)"
-User: [Pays while AI waits]
-AI: "Payment received — generating result..."
-AI: Executes process_large_dataset() → Returns results
+User: "Please process this large dataset: http://data.csv"
+LLM: tool call → process_large_dataset("http://data.csv")
+MCP server: Returns progress indicator and payment link in a progress message
+User: [Pays]
+MCP server: "Payment received — generating result..."
+MCP server: Executes process_large_dataset() → Returns results
 ```
 
 **Advantages:**
 - ✅ Non-blocking payment process
 - ✅ Real-time progress updates
 - ✅ Automatic execution after payment
-- ✅ Good for expensive operations
 
 **Disadvantages:**
 - ❌ Holds the tool execution thread
-- ❌ 15-minute timeout limit
-- ❌ Requires progress reporting support
+- ❌ Timeout duration depends on the client
+- ❌ Requires progress reporting support that can display progress messages (not just percentages)
 
 ### OOB Flow (Coming Soon)
 
-**Best for:** Webhook-based integrations, asynchronous processing
-
-Out-of-band payment processing for maximum flexibility:
-
-```python
-# Coming in future release
-PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.OOB)
-```
-
-Will support:
-- Webhook-based payment confirmation
-- Asynchronous tool execution
-- Email/SMS payment links
-- Subscription-based access
-
-## Choosing the Right Flow
-
-| Use Case | Recommended Flow | Why |
-|----------|-----------------|-----|
-| **General purpose tools** | TWO_STEP | Maximum compatibility, clear UX |
-| **Quick micro-transactions** | ELICITATION | Seamless, immediate |
-| **Expensive computations** | PROGRESS | User sees progress, non-blocking |
-| **Batch/background jobs** | OOB | Asynchronous, webhook-driven |
-| **Subscription access** | OOB | Recurring payments |
+(Coming Soon)
 
 ## Advanced Configuration
 
@@ -278,22 +252,8 @@ PayMCP must be deployed as a hosted service to protect payment provider API keys
 # API keys never leave your servers
 ```
 
-### Error Handling
 
-All flows handle common payment errors:
-
-```python
-@mcp.tool()
-@price(amount=1.00, currency="USD")
-def my_tool(input: str, ctx: Context) -> str:
-    try:
-        return "Success result"
-    except PaymentError as e:
-        # PayMCP handles payment-related errors
-        return {"error": "Payment failed", "message": str(e)}
-```
-
-### Multiple Providers
+### Multiple Providers (coming soon)
 
 Configure multiple providers using any combination of configuration styles:
 
@@ -312,30 +272,6 @@ PayMCP(
 # TODO: Provider selection and failover coming soon
 ```
 
-You can also use a list of instances for simpler configuration:
-
-```python
-PayMCP(
-    mcp,
-    providers=[
-        StripeProvider(apiKey="sk_..."),
-        WalleotProvider(api_key="wk_..."),
-        MyCustomProvider(...)
-    ]
-)
-# Provider keys are automatically derived from class names or .slug/.name attributes
-```
-
-## Flow Comparison
-
-| Feature | TWO_STEP | ELICITATION | PROGRESS | OOB |
-|---------|----------|-------------|----------|-----|
-| **Compatibility** | ✅ Universal | ⚠️ Requires client support | ✅ Universal | 🔜 Coming soon |
-| **User Steps** | 2 calls | 1 call | 1 call | Async |
-| **Real-time** | ❌ | ✅ | ✅ | ❌ |
-| **Background processing** | ❌ | ❌ | ✅ | ✅ |
-| **Timeout handling** | ✅ | ⚠️ Client dependent | ⚠️ 15min limit | ✅ |
-| **Error recovery** | ✅ | ✅ | ⚠️ Limited | ✅ |
 
 ## Next Steps
 

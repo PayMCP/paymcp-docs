@@ -12,9 +12,7 @@ Stripe is one of the most popular payment processors globally, supporting credit
 
 - **Global Coverage** - Accept payments in 135+ currencies
 - **Payment Methods** - Cards, bank transfers, digital wallets
-- **Strong Authentication** - Built-in SCA compliance
-- **Developer-Friendly** - Excellent docs and testing tools
-- **Instant Payouts** - Fast settlement to your bank account
+
 
 ## Quick Setup
 
@@ -89,8 +87,10 @@ PayMCP(
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def test_payment(message: str, ctx: Context) -> str:
-    return f"Payment successful! Message: {message}"
+def test_tool(message: str, ctx: Context) -> str:
+    """Tool description"""
+    # Your code goes here
+    return f"Here is your result: {message}"
 ```
 
 Test with Stripe's test card: `4242 4242 4242 4242`
@@ -118,51 +118,6 @@ Available parameters:
 - `{CHECKOUT_SESSION_ID}` - Stripe session ID
 - `{TOOL_NAME}` - Name of the MCP tool being purchased
 
-### Webhook Integration
-
-For production deployments, set up webhooks to handle payment events:
-
-```python
-# webhook_handler.py
-import stripe
-from flask import Flask, request
-
-app = Flask(__name__)
-stripe.api_key = "sk_live_..."
-
-@app.route('/stripe-webhook', methods=['POST'])
-def handle_webhook():
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
-    
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, "whsec_..."  # Your webhook secret
-        )
-        
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            # Handle successful payment
-            print(f"Payment completed: {session['id']}")
-            
-    except ValueError:
-        return "Invalid payload", 400
-    except stripe.error.SignatureVerificationError:
-        return "Invalid signature", 400
-    
-    return "Success", 200
-```
-
-### Multiple Currencies
-
-Stripe supports 135+ currencies:
-
-```python
-@price(amount=1.50, currency="EUR")   # Euros
-@price(amount=100, currency="JPY")    # Japanese Yen
-@price(amount=5.00, currency="GBP")   # British Pounds
-@price(amount=10.00, currency="CAD")  # Canadian Dollars
-```
 
 ## Testing
 
@@ -178,15 +133,6 @@ Stripe provides comprehensive test cards:
 | `4000000000009987` | Visa - Lost card |
 | `4000002500003155` | Visa - Requires authentication |
 
-### Test Amounts
-
-Special amounts trigger different behaviors:
-
-```python
-@price(amount=0.50, currency="USD")   # Standard success
-@price(amount=0.51, currency="USD")   # Requires authentication  
-@price(amount=0.52, currency="USD")   # Declined - insufficient funds
-```
 
 ### Development vs Production
 
@@ -199,8 +145,8 @@ from paymcp.providers import StripeProvider
 dev_providers = {
     "stripe": {
         "apiKey": "sk_test_51...",  # Test key
-        "success_url": "http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
-        "cancel_url": "http://localhost:3000/cancel"
+        "success_url": "http://your custom_url/success?session_id={CHECKOUT_SESSION_ID}",
+        "cancel_url": "http://your custom_url/cancel"
     }
 }
 
@@ -208,8 +154,8 @@ dev_providers = {
 dev_providers = [
     StripeProvider(
         apiKey="sk_test_51...",
-        success_url="http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url="http://localhost:3000/cancel"
+        success_url="http://your custom_url/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url="http://your custom_url/cancel"
     )
 ]
 
@@ -217,8 +163,8 @@ dev_providers = [
 prod_providers = {
     "stripe": {
         "apiKey": "sk_live_51...",  # Live key
-        "success_url": "https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-        "cancel_url": "https://yourapp.com/cancel"
+        "success_url": "https://your custom_url/success?session_id={CHECKOUT_SESSION_ID}",
+        "cancel_url": "https://your custom_url/cancel"
     }
 }
 
@@ -226,8 +172,8 @@ prod_providers = {
 prod_providers = [
     StripeProvider(
         apiKey="sk_live_51...",
-        success_url="https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url="https://yourapp.com/cancel"
+        success_url="https://your custom_url/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url="https://your custom_url/cancel"
     )
 ]
 ```
@@ -275,7 +221,6 @@ Stripe has rate limits. PayMCP handles retries automatically:
 
 - **Never expose secret keys** in client-side code
 - **Use test keys** during development
-- **Implement webhooks** for production
 - **Validate webhook signatures** to prevent spoofing
 
 ### User Experience
@@ -294,29 +239,7 @@ def grammar_check_bulk(texts: list[str], ctx: Context) -> list[str]:
     return [correct_text(t) for t in texts[:50]]
 ```
 
-### Performance
 
-- **Cache payment sessions** when possible
-- **Use webhooks** instead of polling
-- **Batch operations** to reduce API calls
-
-## Troubleshooting
-
-### Common Issues
-
-**Payment not completing:**
-- Verify success_url is accessible
-- Check webhook configuration
-- Ensure proper session ID handling
-
-**Invalid session errors:**
-- Sessions expire after 24 hours
-- Don't reuse session IDs
-- Handle expired sessions gracefully
-
-**Currency mismatch:**
-- Ensure your Stripe account supports the currency
-- Check for proper currency codes (ISO 4217)
 
 ### Debug Mode
 
