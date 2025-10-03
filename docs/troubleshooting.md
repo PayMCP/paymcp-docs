@@ -8,23 +8,14 @@ description: Common issues, solutions, and frequently asked questions about PayM
 
 Common issues, solutions, and frequently asked questions about PayMCP.
 
-## 🚨 Critical Security Issue
 
 ### STDIO Mode Deployment Error
 
-**Error**: Planning to deploy PayMCP in STDIO mode
+**Error**: STDIO mode disabled by PayMCP
 
 **Why this is dangerous**: STDIO mode requires distributing your server (including API keys) to end users, exposing sensitive payment credentials.
 
-**Solution**: Always use hosted deployment:
-```python
-# ❌ NEVER do this - exposes API keys to users
-# Distributing this code gives users your payment secrets
-PayMCP(mcp, providers={"stripe": {"apiKey": "sk_live_..."}})
-
-# ✅ Do this - deploy on your secure infrastructure  
-# Users connect remotely, never see your API keys
-```
+**Solution**: Always use hosted deployment
 
 ## Quick Fixes
 
@@ -69,24 +60,7 @@ print(f"Stripe key: {os.getenv('STRIPE_SECRET_KEY')[:10]}...")  # Check first 10
    - Verify permissions are correct
    - Check account status
 
-### Payment Not Completing
 
-**Error**: User pays but tool doesn't execute
-
-**Solutions**:
-1. **Check success URL accessibility**:
-```python
-# Ensure URLs are accessible
-providers = {
-    "stripe": {
-        "success_url": "https://yourapp.com/success",  # Must be reachable
-        "cancel_url": "https://yourapp.com/cancel"
-    }
-}
-```
-
-2. **Verify webhook configuration** (if using webhooks)
-3. **Check payment status manually** in provider dashboard
 
 ## Common Integration Issues
 
@@ -161,95 +135,6 @@ class MyProvider(BasePaymentProvider):
         return "paid"
 ```
 
-## Provider-Specific Issues
-
-### Stripe Issues
-
-#### Session Expired Error
-
-**Error**: `Invalid session ID` or `Session expired`
-
-**Cause**: Stripe checkout sessions expire after 24 hours
-
-**Solution**: Generate new payment session:
-```python
-# Don't reuse payment sessions
-# Each tool call should create a fresh session
-```
-
-#### Webhook Signature Verification Failed
-
-**Error**: `Invalid webhook signature`
-
-**Solution**: Check webhook secret:
-```python
-import stripe
-
-# Verify webhook secret is correct
-webhook_secret = "whsec_..."  # From Stripe dashboard
-```
-
-#### Currency Not Supported
-
-**Error**: `Invalid currency code`
-
-**Solution**: Use supported currencies:
-```python
-# Check Stripe's supported currencies
-SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", ...]
-
-@price(amount=1.00, currency="USD")  # Always supported
-```
-
-### PayPal Issues
-
-#### OAuth Token Error
-
-**Error**: `Invalid client credentials`
-
-**Solution**: Verify PayPal app configuration:
-```python
-providers = {
-    "paypal": {
-        "client_id": "YOUR_CLIENT_ID",      # From PayPal Developer Console
-        "client_secret": "YOUR_CLIENT_SECRET",  # From PayPal Developer Console
-        "sandbox": True  # Ensure sandbox matches your credentials
-    }
-}
-```
-
-#### Payment Not Capturing
-
-**Error**: Payment authorized but not captured
-
-**Solution**: PayMCP handles auto-capture, but check:
-- PayPal app has proper permissions
-- Merchant account is verified
-- Currency is supported in your region
-
-### Walleot Issues
-
-#### Network Confirmation Delays
-
-**Error**: `Payment pending` for extended periods
-
-**Cause**: Blockchain network congestion
-
-**Solution**: 
-- Use PROGRESS flow for better UX during delays
-- Consider stablecoins (USDC) for faster confirmation
-- Inform users about potential delays
-
-#### Insufficient Gas/Fees
-
-**Error**: `Transaction failed - insufficient gas`
-
-**Cause**: Network fees higher than user's gas allocation
-
-**Solution**: 
-- Price in USD (let Walleot handle conversion)
-- Recommend users account for network fees
-- Use Layer 2 networks when possible
 
 ## Payment Flow Issues
 
@@ -272,51 +157,12 @@ PayMCP(
 
 **Error**: `Payment timeout reached; aborting`
 
-**Cause**: User didn't complete payment within 15 minutes
+**Cause**: User didn't complete payment within timeout set by client
 
 **Solution**:
 - Inform users about time limit
-- Use shorter timeout for small amounts
-- Implement retry mechanism
 
-## Performance Issues
 
-### Slow Payment Creation
-
-**Issue**: Tool calls take long time to return payment URLs
-
-**Solutions**:
-1. **Cache provider tokens** when possible
-2. **Use async/await** properly
-3. **Optimize provider API calls**
-
-```python
-# Good: Proper async usage
-@mcp.tool()
-@price(amount=1.00, currency="USD")
-async def fast_tool(input: str, ctx: Context) -> str:
-    # PayMCP handles payment creation asynchronously
-    return await process_input(input)
-```
-
-### High Memory Usage
-
-**Issue**: Memory usage grows over time
-
-**Cause**: Payment session data not cleaned up
-
-**Solution**: Implement cleanup:
-```python
-# Clean up expired payment sessions periodically
-import asyncio
-
-async def cleanup_expired_sessions():
-    # Remove sessions older than 24 hours
-    pass
-
-# Run cleanup task
-asyncio.create_task(cleanup_expired_sessions())
-```
 
 ## Development Issues
 
@@ -460,7 +306,7 @@ A: Deploy PayMCP on your own infrastructure (AWS, GCP, Heroku, etc.) where:
 A: Depends on the provider:
 - Stripe: $0.50 USD minimum
 - PayPal: $0.01 USD minimum  
-- Walleot: No minimum (network fees apply)
+- Walleot: No minimum
 - Square: $1.00 USD minimum
 
 **Q: Are payments refundable?**
@@ -468,25 +314,8 @@ A: Yes, but refund handling depends on your business logic. PayMCP doesn't autom
 
 ### Technical
 
-**Q: Can I customize the payment flow logic?**
-A: PayMCP provides standard flows (TWO_STEP, ELICITATION, PROGRESS). Custom flows can be implemented by extending the base provider classes.
 
-**Q: How do I handle partial failures?**
-A: Implement proper error handling in your tools:
-```python
-@price(amount=1.00, currency="USD")
-async def robust_tool(input: str, ctx: Context) -> str:
-    try:
-        result = await expensive_operation(input)
-        return result
-    except Exception as e:
-        # Log error, potentially issue refund
-        logger.error(f"Tool failed after payment: {e}")
-        raise  # PayMCP will handle the error response
-```
 
-**Q: Can I implement subscription billing?**
-A: Yes! See the [subscription example](./examples/subscription-tool) for a complete implementation pattern.
 
 ### Business
 
@@ -498,24 +327,6 @@ A: Provider fees vary:
 - Square: 2.9% + $0.30
 - Adyen: Custom enterprise pricing
 
-**Q: How do I handle taxes?**
-A: PayMCP handles payment processing only. Tax calculation and compliance are your responsibility. Consider using tax services like TaxJar or Avalara.
-
-**Q: Can I offer free trials?**
-A: Yes! Implement free trials in your tool logic:
-```python
-@mcp.tool()
-async def premium_feature(input: str, ctx: Context) -> str:
-    user_id = getattr(ctx, 'user_id', 'anonymous')
-    
-    if is_trial_user(user_id):
-        # Provide free access during trial
-        return await process_premium(input)
-    else:
-        # Require payment after trial
-        # This tool would need @price decorator
-        return await process_premium(input)
-```
 
 ## Getting Help
 
@@ -538,11 +349,8 @@ logging.basicConfig(level=logging.DEBUG)
 1. **GitHub Issues**: [PayMCP Issues](https://github.com/PayMCP/paymcp/issues)
 2. **Documentation**: This documentation site
 3. **Provider Support**: 
-   - Stripe: Dashboard support
-   - PayPal: Developer Console
-   - Walleot: 24/7 support
-   - Others: Provider-specific channels
-
+   - Use provider specific channels
+   
 ### Reporting Bugs
 
 When reporting issues, include:

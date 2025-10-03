@@ -200,7 +200,7 @@ def detailed_analysis(document: str, ctx: Context) -> dict:
 
 ### Currency Support
 
-PayMCP supports all major currencies:
+Currency support depends on your payment provider. Some providers (like Stripe) allow you to set prices in one currency but accept payments in many others, handling conversion automatically. Please check your provider’s documentation for the full list of supported currencies and conversion rules.
 
 ```python
 @price(amount=1.50, currency="EUR")  # Euros
@@ -232,7 +232,7 @@ For real-time interactions:
 ```python
 PayMCP(mcp, providers={"stripe": {...}}, payment_flow=PaymentFlow.ELICITATION)
 
-# Shows payment UI immediately when tool is called
+# Shows payment UI immediately when tool is called (if supported by client)
 # Waits for payment before proceeding
 ```
 
@@ -243,9 +243,11 @@ For long-running operations:
 ```python
 PayMCP(mcp, providers={"stripe": {...}}, payment_flow=PaymentFlow.PROGRESS)
 
-# Shows payment link and progress indicator
+# Shows payment link and progress indicator (if supported by client)
 # Automatically proceeds when payment is received
 ```
+
+See the list of MCP clients and their capabilities here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
 ## Testing Your Integration
 
@@ -265,16 +267,20 @@ def hello_world(name: str, ctx: Context) -> str:
     return f"Hello, {name}! Payment successful."
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="streamable-http")
 ```
 
 ### 2. Connect Your MCP Client
 
-Connect your MCP client (Claude Desktop, etc.) to your server and test:
+For testing, we recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
 
-1. Call the `hello_world` tool
-2. Complete the payment using the provided link
-3. Confirm the tool executes successfully
+1. Run your MCP server code.
+2. Check the console for the `/mcp` URL (e.g. `http://127.0.0.1:8000/mcp`).
+3. Start the inspector with:
+   ```bash
+   npx @modelcontextprotocol/inspector@latest
+   ```
+4. In MCP Inspector, select **streamable HTTP** as the transport type and enter your `/mcp` URL.
 
 ### 3. Use Test Credentials
 
@@ -284,10 +290,11 @@ Connect your MCP client (Claude Desktop, etc.) to your server and test:
 - **PayPal**: Set `sandbox=True`
 - **Square**: Use sandbox environment
 - **Walleot**: Use test API keys
+- **Coinbase Commerce**: No sandbox is available, so test with very small amounts.
 
 ## Next Steps
 
-✅ **Basic setup complete!** Your MCP tools are now monetized.
+✅ **Basic setup complete!** Your MCP tools will now ask for payment before running.
 
 ### Explore More:
 
@@ -303,12 +310,10 @@ Before going live:
 - [ ] **CRITICAL: Verify hosted deployment** (NOT STDIO mode)
 - [ ] **CRITICAL: Confirm API keys are server-side only**
 - [ ] Switch to production API keys
-- [ ] Configure proper success/cancel URLs  
 - [ ] Set up webhook endpoints (if required by provider)
 - [ ] Test with real small amounts
 - [ ] Implement proper error handling
 - [ ] Add logging and monitoring
-- [ ] Security audit: No credentials in client-accessible code
 
 ## Common Issues
 
@@ -413,7 +418,7 @@ PayMCP(mcp, providers={
 
 ### ✅ Secure Hosted Deployment (Required)
 
-Deploy your PayMCP server on cloud infrastructure:
+Deploy your MCP server on cloud infrastructure:
 
 **Popular Options:**
 - **Railway**: Simple deployment with environment variables
@@ -428,7 +433,7 @@ Deploy your PayMCP server on cloud infrastructure:
 # Install Railway CLI
 npm install -g @railway/cli
 
-# Deploy your PayMCP server
+# Deploy your MCP server
 railway login
 railway init
 railway add  # Add environment variables for API keys
@@ -446,7 +451,7 @@ CMD ["python", "server.py"]
 
 ### ❌ STDIO Mode (Prohibited)
 
-**Never deploy PayMCP in STDIO mode:**
+**If you use PayMCP – never allow users to download your code and run it in STDIO mode:**
 - Users would download your server code
 - Payment API keys would be exposed
 - Creates massive security vulnerability

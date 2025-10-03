@@ -108,8 +108,8 @@ class PaymentFlow(str, Enum):
 |------|-------------|----------|
 | `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
 | `ELICITATION` | Interactive payment during execution | Real-time interactions |
-| `PROGRESS` | Background payment with progress updates | Long-running operations |
-| `OOB` | Out-of-band payment processing | Webhook-based integrations |
+| `PROGRESS` | Background payment with progress updates | Real-time interactions  |
+| `OOB` | Out-of-band  | Coming soon |
 
 ## Decorators
 
@@ -133,16 +133,15 @@ def price(amount: float, currency: str = "USD")
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def my_paid_tool(input: str, ctx: Context) -> str:
+def generate_report(input: str, ctx: Context) -> str:
+    """Tool description"""
+    # Your code goes here
     return f"Processed: {input}"
 ```
 
 #### Supported Currencies
 
-PayMCP supports all major currencies:
-
-- **Fiat**: USD, EUR, GBP, JPY, CAD, AUD, CHF, SEK, NOK, DKK, PLN, CZK, HUF, etc.
-- **Crypto**: BTC, ETH, USDC, USDT (provider dependent)
+Currency support depends on your payment provider. Some providers (like Stripe) allow you to set prices in one currency but accept payments in many others, handling conversion automatically. Please check your provider’s documentation for the full list of supported currencies and conversion rules.
 
 ## Custom Provider Development
 
@@ -332,10 +331,10 @@ providers = {
 
 ### TWO_STEP Flow
 
-The TWO_STEP flow splits payment into two separate MCP tool calls:
+The TWO_STEP flow splits your tool into two separate tools:
 
-1. **Initiate**: Original tool call returns payment information
-2. **Confirm**: Separate confirmation tool executes the original function
+1. **Initiate**: To create and return payment information
+2. **Confirm**: Separate confirmation tool executes the original function after payment succeed
 
 #### Response Format (Initiate)
 
@@ -380,7 +379,6 @@ The PROGRESS flow shows payment status and progress updates.
 
 - Real-time progress reporting via `ctx.report_progress()`
 - Automatic execution after payment confirmation
-- 15-minute timeout for payment completion
 
 #### Progress Messages
 
@@ -396,12 +394,6 @@ await ctx.report_progress(
 
 The OOB (Out-of-Band) flow is planned for future releases.
 
-#### Planned Features
-
-- Webhook-based payment confirmation
-- Asynchronous tool execution
-- Email/SMS payment notifications
-- Subscription-based access
 
 ## Context Requirements
 
@@ -452,7 +444,6 @@ PayMCP handles various error scenarios automatically:
 |------------|-------------|----------|
 | Missing context | No `ctx` parameter | Add `ctx: Context` parameter |
 | Invalid amount | Amount less than or equal to 0 or not numeric | Use valid positive amount |
-| Missing price decorator | Tool not priced | Add `@price()` decorator |
 
 ## Advanced Configuration
 
@@ -460,12 +451,13 @@ PayMCP handles various error scenarios automatically:
 
 ```python
 # PayMCP uses the first provider by default
+# User will be able to choose how he wants to pay (coming soon)
 PayMCP(
     mcp,
     providers={
-        "stripe": {"apiKey": "sk_..."},      # Primary
-        "walleot": {"apiKey": "wk_..."},     # Fallback (planned)
-        "paypal": {                          # Alternative (planned)
+        "stripe": {"apiKey": "sk_..."},     
+        "walleot": {"apiKey": "wk_..."},     
+        "paypal": {                      
             "client_id": "...",
             "client_secret": "..."
         }
