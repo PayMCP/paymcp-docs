@@ -221,26 +221,13 @@ MCP server: Executes process_large_dataset() → Returns results
 
 ### OOB Flow (Coming Soon)
 
-(Coming Soon)
+Similar to ELICITATION flow, but payment links are handled as actual clickable links rather than text to display to the user.
 
 ## Advanced Configuration
 
-### Custom Success/Cancel URLs
+### Custom Return URLs
 
-Configure where users go after payment:
-
-```python
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": "sk_test_...",
-            "success_url": "https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-            "cancel_url": "https://yourapp.com/cancel"
-        }
-    }
-)
-```
+Some providers support custom return URLs after payment (success_url/cancel_url for Stripe, return_url for Adyen, etc.). These will be handled at the PayMCP level in future versions.
 
 ### Secure Deployment
 

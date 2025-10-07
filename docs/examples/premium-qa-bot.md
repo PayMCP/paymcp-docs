@@ -399,7 +399,6 @@ PayMCP(
 
 - **[Implement Usage Analytics](../quickstart#production-checklist)** - Track user behavior
 - **[A/B Test Pricing](../providers/stripe)** - Optimize conversion rates  
-- **[Add Subscription Model](./subscription-tool)** - Monthly unlimited access
 - **[Multi-Provider Support](../providers/walleot)** - Accept crypto payments
 
 This freemium model demonstrates how PayMCP enables sophisticated pricing strategies that maximize both user adoption and revenue.

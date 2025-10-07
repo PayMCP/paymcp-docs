@@ -27,11 +27,13 @@ from paymcp import PayMCP, price, PaymentFlow
 mcp = FastMCP("AI agent name")
 
 # Configure PayMCP with your provider
+from paymcp.providers import StripeProvider
+
 PayMCP(
     mcp,
-    providers={
-        "stripe": {"apiKey": "sk_test_..."},
-    },
+    providers=[
+        StripeProvider(apiKey="sk_test_...")
+    ]
 )
 
 # Add pricing to any tool
@@ -74,7 +76,6 @@ See the list of clients and their capabilities here: [https://modelcontextprotoc
 
 - **[Paid Image Generator](./examples/paid-image-generator)** - Charge per image generation
 - **[Premium Q&A Bot](./examples/premium-qa-bot)** - Freemium model with paid premium features
-- **[Subscription Tool](./examples/subscription-tool)** - Monthly subscription access
 
 ## Architecture
 

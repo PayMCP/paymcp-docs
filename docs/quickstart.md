@@ -70,6 +70,9 @@ PayMCP(mcp, providers={
 
 ### 1. Initialize Your MCP Server
 
+<details>
+<summary>Python</summary>
+
 ```python
 from mcp.server.fastmcp import FastMCP, Context
 from paymcp import PayMCP, price, PaymentFlow
@@ -78,57 +81,57 @@ from paymcp import PayMCP, price, PaymentFlow
 mcp = FastMCP("My AI Assistant")
 ```
 
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+import { FastMCP } from '@mcp/server-fastmcp';
+import { PayMCP, price, PaymentFlow } from 'paymcp';
+import type { Context } from '@mcp/server-fastmcp';
+
+// Create your MCP server
+const mcp = new FastMCP("My AI Assistant");
+```
+
+</details>
+
 ### 2. Configure PayMCP
 
-PayMCP now supports multiple ways to configure payment providers. Choose the approach that works best for your use case:
-
-#### Option 1: Config Mapping (Default)
-
-```python
-# Configure PayMCP with provider configuration
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": "sk_test_51...",  # Your Stripe secret key
-            "success_url": "https://yourapp.com/success",
-            "cancel_url": "https://yourapp.com/cancel"
-        }
-    },
-    payment_flow=PaymentFlow.TWO_STEP  # Default, most compatible
-)
-```
-
-#### Option 2: Provider Instances (Advanced)
+<details>
+<summary>Python</summary>
 
 ```python
-import os
-from paymcp.providers import StripeProvider, WalleotProvider, CoinbaseProvider
+from paymcp.providers import StripeProvider
 
-# Configure with ready-made provider instances
-PayMCP(
-    mcp,
-    providers={
-        "stripe": StripeProvider(apiKey=os.getenv("STRIPE_API_KEY")),
-        "custom": MyCustomProvider(api_key="...")
-    }
-)
-```
-
-#### Option 3: List of Instances
-
-```python
-# Configure with a list of provider instances
 PayMCP(
     mcp,
     providers=[
-        StripeProvider(apiKey=os.getenv("STRIPE_API_KEY")),
-        WalleotProvider(api_key=os.getenv("WALLEOT_API_KEY")),
-        CoinbaseProvider(api_key=os.getenv("COINBASE_API_KEY"))
+        StripeProvider(apiKey="sk_test_51...")
     ]
 )
-# Note: The first provider in the list is used by default
 ```
+
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+import { StripeProvider } from 'paymcp/providers';
+
+new PayMCP(
+    mcp,
+    {
+        providers: [
+            new StripeProvider({ apiKey: "sk_test_51..." })
+        ]
+    }
+);
+```
+
+</details>
 
 <details>
 <summary>More Provider Configuration Examples</summary>
@@ -173,6 +176,9 @@ PayMCP(mcp, providers={
 
 Add the `@price` decorator to any MCP tool:
 
+<details>
+<summary>Python</summary>
+
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
@@ -182,7 +188,27 @@ def generate_image(prompt: str, ctx: Context) -> str:
     return f"Generated image for: {prompt}"
 ```
 
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+@mcp.tool()
+@price({ amount: 0.50, currency: "USD" })
+async function generateImage(prompt: string, ctx: Context): Promise<string> {
+    // Generate an AI image from a text prompt
+    // Your image generation logic here
+    return `Generated image for: ${prompt}`;
+}
+```
+
+</details>
+
 ### Different Price Points
+
+<details>
+<summary>Python</summary>
 
 ```python
 @mcp.tool()
@@ -198,15 +224,30 @@ def detailed_analysis(document: str, ctx: Context) -> dict:
     return analysis_results
 ```
 
-### Currency Support
+</details>
 
-Currency support depends on your payment provider. Some providers (like Stripe) allow you to set prices in one currency but accept payments in many others, handling conversion automatically. Please check your provider’s documentation for the full list of supported currencies and conversion rules.
+<details>
+<summary>JavaScript/TypeScript</summary>
 
-```python
-@price(amount=1.50, currency="EUR")  # Euros
-@price(amount=100, currency="JPY")   # Japanese Yen
-@price(amount=0.001, currency="BTC") # Bitcoin (Walleot/Coinbase)
+```typescript
+@mcp.tool()
+@price({ amount: 0.05, currency: "USD" })  // Micro-payment
+async function checkGrammar(text: string, ctx: Context): Promise<string> {
+    // Check and correct grammar in text
+    return correctedText;
+}
+
+@mcp.tool()
+@price({ amount: 2.99, currency: "USD" })  // Premium feature
+async function detailedAnalysis(document: string, ctx: Context): Promise<object> {
+    // Perform detailed document analysis
+    return analysisResults;
+}
 ```
+
+</details>
+
+
 
 ## Payment Flows
 

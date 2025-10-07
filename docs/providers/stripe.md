@@ -28,6 +28,9 @@ PayMCP supports multiple ways to configure the Stripe provider:
 
 #### Option 1: Config Mapping (Default)
 
+<details>
+<summary>Python</summary>
+
 ```python
 from paymcp import PayMCP, PaymentFlow
 
@@ -43,6 +46,31 @@ PayMCP(
     payment_flow=PaymentFlow.TWO_STEP
 )
 ```
+
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+import { PayMCP, PaymentFlow } from 'paymcp';
+
+new PayMCP(
+    mcp,
+    {
+        providers: {
+            "stripe": {
+                apiKey: "sk_test_51...",  // Your secret key
+                success_url: "https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
+                cancel_url: "https://yourapp.com/cancel"
+            }
+        },
+        payment_flow: PaymentFlow.TWO_STEP
+    }
+);
+```
+
+</details>
 
 #### Option 2: Provider Instance
 

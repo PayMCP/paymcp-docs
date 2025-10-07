@@ -29,7 +29,6 @@ const sidebars: SidebarsConfig = {
           items: [
             'examples/paid-image-generator',
             'examples/premium-qa-bot',
-            'examples/subscription-tool',
           ],
         },
         'troubleshooting',

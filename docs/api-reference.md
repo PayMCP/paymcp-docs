@@ -65,6 +65,9 @@ providers = [
 
 #### Examples
 
+<details>
+<summary>Python</summary>
+
 ```python
 from paymcp import PayMCP, PaymentFlow
 from paymcp.providers import StripeProvider
@@ -89,6 +92,42 @@ paymcp = PayMCP(
     payment_flow=PaymentFlow.TWO_STEP
 )
 ```
+
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+import { PayMCP, PaymentFlow } from 'paymcp';
+import { StripeProvider, WalleotProvider } from 'paymcp/providers';
+
+// Config mapping (traditional)
+const paymcp = new PayMCP(
+    mcp,
+    {
+        providers: {
+            "stripe": { apiKey: "sk_test_..." },
+            "walleot": { apiKey: "wk_test_..." }
+        },
+        payment_flow: PaymentFlow.ELICITATION
+    }
+);
+
+// Provider instances
+const paymcp2 = new PayMCP(
+    mcp,
+    {
+        providers: [
+            new StripeProvider({ apiKey: "sk_test_..." }),
+            new WalleotProvider({ api_key: "wk_test_..." })
+        ],
+        payment_flow: PaymentFlow.TWO_STEP
+    }
+);
+```
+
+</details>
 
 ### PaymentFlow
 
@@ -130,6 +169,9 @@ def price(amount: float, currency: str = "USD")
 
 #### Example
 
+<details>
+<summary>Python</summary>
+
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
@@ -138,6 +180,23 @@ def generate_report(input: str, ctx: Context) -> str:
     # Your code goes here
     return f"Processed: {input}"
 ```
+
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+@mcp.tool()
+@price({ amount: 0.50, currency: "USD" })
+async function generateReport(input: string, ctx: Context): Promise<string> {
+    // Tool description
+    // Your code goes here
+    return `Processed: ${input}`;
+}
+```
+
+</details>
 
 #### Supported Currencies
 

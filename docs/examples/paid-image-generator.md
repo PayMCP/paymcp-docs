@@ -21,6 +21,9 @@ This example shows how to:
 
 ### 1. Basic Setup
 
+<details>
+<summary>Python</summary>
+
 ```python
 # server.py
 import asyncio
@@ -39,7 +42,7 @@ PayMCP(
     providers={
         "stripe": {
             "apiKey": os.getenv("STRIPE_SECRET_KEY"),
-            "success_url": "https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
+            "success_url": "https://yourapp.com/success?session_id=\{CHECKOUT_SESSION_ID\}",
             "cancel_url": "https://yourapp.com/cancel"
         }
     },
@@ -53,7 +56,7 @@ PayMCP(
     providers={
         "stripe": StripeProvider(
             apiKey=os.getenv("STRIPE_SECRET_KEY"),
-            success_url="https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
+            success_url="https://yourapp.com/success?session_id=\{CHECKOUT_SESSION_ID\}",
             cancel_url="https://yourapp.com/cancel"
         )
     },
@@ -66,7 +69,7 @@ PayMCP(
     providers=[
         StripeProvider(
             apiKey=os.getenv("STRIPE_SECRET_KEY"),
-            success_url="https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
+            success_url="https://yourapp.com/success?session_id=\{CHECKOUT_SESSION_ID\}",
             cancel_url="https://yourapp.com/cancel"
         )
     ],
@@ -74,27 +77,86 @@ PayMCP(
 )
 ```
 
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+// server.ts
+import { FastMCP } from '@mcp/server-fastmcp';
+import { PayMCP, price, PaymentFlow } from 'paymcp';
+import { StripeProvider } from 'paymcp/providers';
+import type { Context } from '@mcp/server-fastmcp';
+
+// Initialize MCP server
+const mcp = new FastMCP("AI Image Generator");
+
+// Configure PayMCP with your preferred provider (multiple options available in 0.2.0)
+
+// Option 1: Config mapping (traditional)
+new PayMCP(
+    mcp,
+    {
+        providers: {
+            "stripe": {
+                apiKey: process.env.STRIPE_SECRET_KEY!,
+                success_url: "https://yourapp.com/success?session_id=\{CHECKOUT_SESSION_ID\}",
+                cancel_url: "https://yourapp.com/cancel"
+            }
+        },
+        payment_flow: PaymentFlow.PROGRESS  // Good for longer operations
+    }
+);
+
+// Option 2: Provider instances (new in 0.2.0)
+new PayMCP(
+    mcp,
+    {
+        providers: {
+            "stripe": new StripeProvider({
+                apiKey: process.env.STRIPE_SECRET_KEY!,
+                success_url: "https://yourapp.com/success?session_id=\{CHECKOUT_SESSION_ID\}",
+                cancel_url: "https://yourapp.com/cancel"
+            })
+        },
+        payment_flow: PaymentFlow.PROGRESS
+    }
+);
+
+// Option 3: List of instances (new in 0.2.0)
+new PayMCP(
+    mcp,
+    {
+        providers: [
+            new StripeProvider({
+                apiKey: process.env.STRIPE_SECRET_KEY!,
+                success_url: "https://yourapp.com/success?session_id=\{CHECKOUT_SESSION_ID\}",
+                cancel_url: "https://yourapp.com/cancel"
+            })
+        ],
+        payment_flow: PaymentFlow.PROGRESS
+    }
+);
+```
+
+</details>
+
 ### 2. Image Generation Tools
+
+<details>
+<summary>Python</summary>
 
 ```python
 # Basic tier - affordable option
 @mcp.tool()
 @price(amount=0.25, currency="USD")
-async def generate_image_basic(
+async def generate_image(
     prompt: str, 
     aspect_ratio: str = "1:1",
     ctx: Context
 ) -> dict:
-    """
-    Generate a basic quality AI image - $0.25
-    
-    Args:
-        prompt: Description of the image to generate
-        aspect_ratio: Image dimensions (1:1, 16:9, 9:16, 4:3)
-    
-    Returns:
-        dict: Generated image URL and metadata
-    """
+    """Generate a basic quality AI image from text prompt"""
     
     # Validate inputs
     if len(prompt.strip()) < 10:
@@ -102,7 +164,7 @@ async def generate_image_basic(
     
     valid_ratios = ["1:1", "16:9", "9:16", "4:3"]
     if aspect_ratio not in valid_ratios:
-        raise ValueError(f"Aspect ratio must be one of: {valid_ratios}")
+        raise ValueError(f"Aspect ratio must be one of: \{valid_ratios\}")
     
     # Generate image (this is where your AI model runs)
     image_url = await generate_ai_image(
@@ -113,35 +175,79 @@ async def generate_image_basic(
         resolution="512x512"
     )
     
-    return {
+    return \{
         "image_url": image_url,
         "prompt": prompt,
         "quality": "basic",
         "resolution": "512x512",
         "aspect_ratio": aspect_ratio,
         "generation_time": "~30 seconds"
+    \}
+```
+
+</details>
+
+<details>
+<summary>JavaScript/TypeScript</summary>
+
+```typescript
+// Basic tier - affordable option
+@mcp.tool()
+@price({ amount: 0.25, currency: "USD" })
+async function generateImageBasic(
+    prompt: string, 
+    aspectRatio: string = "1:1",
+    ctx: Context
+): Promise<object> {
+    /**
+     * Generate a basic quality AI image - $0.25
+     * 
+     * @param prompt Description of the image to generate
+     * @param aspectRatio Image dimensions (1:1, 16:9, 9:16, 4:3)
+     * @returns Generated image URL and metadata
+     */
+    
+    // Validate inputs
+    if (prompt.trim().length < 10) {
+        throw new Error("Prompt must be at least 10 characters long");
     }
+    
+    const validRatios = ["1:1", "16:9", "9:16", "4:3"];
+    if (!validRatios.includes(aspectRatio)) {
+        throw new Error(`Aspect ratio must be one of: ${validRatios.join(', ')}`);
+    }
+    
+    // Generate image (this is where your AI model runs)
+    const imageUrl = await generateAiImage({
+        prompt,
+        quality: "basic",
+        aspectRatio,
+        steps: 20,  // Lower quality = fewer steps = lower cost
+        resolution: "512x512"
+    });
+    
+    return {
+        image_url: imageUrl,
+        prompt,
+        quality: "basic",
+        resolution: "512x512",
+        aspect_ratio: aspectRatio,
+        generation_time: "~30 seconds"
+    };
+}
+```
+
+</details>
 
 # Premium tier - higher quality
 @mcp.tool()
 @price(amount=0.75, currency="USD")
-async def generate_image_premium(
+async def generate_premium_image(
     prompt: str,
     style: str = "photorealistic",
-    aspect_ratio: str = "1:1",
     ctx: Context
 ) -> dict:
-    """
-    Generate a premium quality AI image - $0.75
-    
-    Args:
-        prompt: Description of the image to generate
-        style: Art style (photorealistic, artistic, cartoon, abstract)
-        aspect_ratio: Image dimensions (1:1, 16:9, 9:16, 4:3)
-    
-    Returns:
-        dict: Generated image URL and metadata
-    """
+    """Generate a high-quality AI image with custom art style"""
     
     # Validate inputs
     if len(prompt.strip()) < 5:
@@ -149,18 +255,18 @@ async def generate_image_premium(
         
     valid_styles = ["photorealistic", "artistic", "cartoon", "abstract"]
     if style not in valid_styles:
-        raise ValueError(f"Style must be one of: {valid_styles}")
+        raise ValueError(f"Style must be one of: \{valid_styles\}")
     
     # Generate higher quality image
     image_url = await generate_ai_image(
-        prompt=f"{prompt}, {style} style",
+        prompt=prompt + f", \{style\} style",
         quality="premium", 
         aspect_ratio=aspect_ratio,
         steps=50,  # More steps = higher quality
         resolution="1024x1024"
     )
     
-    return {
+    return \{
         "image_url": image_url,
         "prompt": prompt,
         "style": style,
@@ -168,7 +274,7 @@ async def generate_image_premium(
         "resolution": "1024x1024", 
         "aspect_ratio": aspect_ratio,
         "generation_time": "~60 seconds"
-    }
+    \}
 ```
 
 ## Usage Examples
