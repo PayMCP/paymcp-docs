@@ -12,11 +12,11 @@ PayMCP is a lightweight SDK that helps you add monetization to your MCP-based to
 
 ## Key Features
 
-- **🔧 Simple Integration** - For Python, add `@price(...)` decorators to your MCP tools. For TypeScript, add a `price` variable in `registerTool()` to enable payments
-- **🔁 Flexible Payment Flows** - Choose between different payment flows (elicit, confirm, progress, etc.)
-- **🔌 Built-in and Custom Providers** - Most top payment providers are built in, and you can easily add custom providers
-- **⚙️ Framework Agnostic** - Easy integration with FastMCP or other MCP servers
-- **🎯 Production Ready** - Built for reliability and scale
+- **Simple Integration** - For Python, add `@price(...)` decorators to your MCP tools. For TypeScript, add a `price` variable in `registerTool()` to enable payments
+- **Flexible Payment Flows** - Choose between different payment flows (elicit, confirm, progress, etc.)
+- **Built-in and Custom Providers** - Most top payment providers are built in, and you can easily add custom providers
+- **Framework Agnostic** - Easy integration with FastMCP or other MCP servers
+- **Production Ready** - Built for reliability and scale
 
 ## Quick Example
 

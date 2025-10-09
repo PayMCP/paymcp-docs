@@ -78,10 +78,24 @@ server.registerTool("process_user_input", {
    - PayPal: Check client ID and secret format
 
 2. **Verify environment variables**:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 import os
 print(f"Stripe key: {os.getenv('STRIPE_SECRET_KEY')[:10]}...")  # Check first 10 chars
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+console.log(`Stripe key: ${process.env.STRIPE_SECRET_KEY?.substring(0, 10)}...`);
+```
+
+</TabItem>
+</Tabs>
 
 3. **Check provider dashboard**:
    - Ensure API key is active
@@ -138,6 +152,10 @@ print(f"MCP: {mcp.__version__}")
 **Error**: `ImportError: cannot import name 'StripeProvider' from 'paymcp.providers'`
 
 **Solution**: Ensure you're using the latest PayMCP version for provider instances:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 # Check version first
 import paymcp
@@ -147,11 +165,30 @@ print(f"PayMCP version: {paymcp.__version__}")
 from paymcp.providers import StripeProvider, WalleotProvider
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// Check version first
+import paymcp from 'paymcp';
+console.log(`PayMCP version: ${paymcp.version}`);
+
+// Then import provider classes
+import { StripeProvider, WalleotProvider } from 'paymcp/providers';
+```
+
+</TabItem>
+</Tabs>
+
 ### Provider Configuration Type Errors
 
 **Error**: `TypeError: Provider must be an instance of BasePaymentProvider`
 
 **Solution**: Ensure custom providers inherit from BasePaymentProvider:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 from paymcp.providers import BasePaymentProvider
 
@@ -162,6 +199,26 @@ class MyProvider(BasePaymentProvider):
     def get_payment_status(self, payment_id: str) -> str:
         return "paid"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { BasePaymentProvider } from 'paymcp/providers';
+
+class MyProvider extends BasePaymentProvider {
+    createPayment(amount: number, currency: string, description: string): [string, string] {
+        return ["payment_id", "https://example.com/pay"];
+    }
+    
+    getPaymentStatus(paymentId: string): string {
+        return "paid";
+    }
+}
+```
+
+</TabItem>
+</Tabs>
 
 
 ## Payment Flow Issues
@@ -238,11 +295,27 @@ load_dotenv()
 **Error**: `TypeError: build_providers expects a mapping or an iterable of provider instances`
 
 **Solution**: Use the canonical provider list format:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 # ✅ Correct
 from paymcp.providers import StripeProvider
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// ✅ Correct
+import { StripeProvider } from 'paymcp/providers';
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+```
+
+</TabItem>
+</Tabs>
 
 ### Class Path Configuration Errors
 

@@ -8,6 +8,9 @@ slug: /paymcp/overview
 
 Provider-agnostic payment layer for MCP (Model Context Protocol) tools and agents.
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 PayMCP is a lightweight SDK that helps you add monetization to your MCP-based tools, servers, or agents. It supports multiple payment providers and integrates seamlessly with MCP's tool/resource interface.
 
 ## 🔧 Features

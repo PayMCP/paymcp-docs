@@ -16,8 +16,6 @@ Install PayMCP from PyPI using pip:
 pip install paymcp
 ```
 
-**⚠️ Security Notice:** PayMCP is only for hosted deployments, not STDIO mode.
-
 ### Requirements
 
 - Python 3.8+
@@ -25,7 +23,7 @@ pip install paymcp
 - **Hosted server environment** (NOT STDIO mode)
 - API keys from your chosen payment provider (kept secure on your server)
 
-## 🚨 Deployment Security
+## Deployment Security
 
 ### Why PayMCP Requires Hosted Deployment
 
@@ -39,18 +37,6 @@ providers = [
 ]
 ```
 
-### STDIO Mode is Incompatible
-
-❌ **Don't do this:** Distribute MCP servers with PayMCP to end users
-- Users download and run your server locally
-- Your API keys are exposed in their environment
-- Users could extract and misuse your payment credentials
-
-✅ **Do this:** Host your PayMCP server
-- Deploy to your own infrastructure (AWS, GCP, etc.)
-- Users connect via network protocols
-- API keys remain secure on your servers
-
 ### Recommended Deployment
 
 ```python
@@ -61,10 +47,11 @@ from paymcp.providers import StripeProvider
 
 mcp = FastMCP("My Hosted AI Service")
 PayMCP(mcp, providers=[
-    StripeProvider(apiKey=os.getenv("STRIPE_SECRET_KEY"))  # Secure on your server
+    StripeProvider(apiKey=os.getenv("STRIPE_SECRET_KEY"))  
+    # Secure on your server
 ])
 
-# Users connect via HTTP/WebSocket, never see the keys
+
 ```
 
 ## Basic Setup
@@ -362,6 +349,7 @@ mcp.run();
 </TabItem>
 </Tabs>
 
+
 ### 2. Connect Your MCP Client
 
 For testing, we recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
@@ -393,86 +381,5 @@ For testing, we recommend using the [MCP Inspector](https://github.com/modelcont
 - **[Payment Flows](./concepts-and-flows)** - Learn about different payment patterns
 - **[Provider Guides](./providers/stripe)** - Provider-specific configuration
 - **[Examples](./examples/paid-image-generator)** - Real-world implementation examples
-- **[Production Deployment](#production-checklist)** - Go-live checklist
-
-## Production Checklist
-
-Before going live:
-
-- [ ] **CRITICAL: Verify hosted deployment** (NOT STDIO mode)
-- [ ] **CRITICAL: Confirm API keys are server-side only**
-- [ ] Switch to production API keys
-- [ ] Test with real small amounts
-- [ ] Implement proper error handling
-- [ ] Add logging and monitoring
-
-## Common Issues
-
-### Tool Not Found Error
-Make sure the `ctx: Context` parameter is included in your tool signature:
-
-```python
-# ❌ Wrong
-@price(amount=0.50, currency="USD")
-def my_tool(input: str) -> str:
-    pass
-
-# ✅ Correct
-@price(amount=0.50, currency="USD")
-def my_tool(input: str, ctx: Context) -> str:
-    pass
-```
-
-### Provider Authentication Error
-Verify your API keys are correct and have the right permissions:
-
-```python
-# Check your provider dashboard for correct keys
-providers={"stripe": {"apiKey": "sk_test_..."}}  # Should start with sk_test_ or sk_live_
-```
-
-
-## Deployment Options
-
-### ✅ Secure Hosted Deployment (Required)
-
-Deploy your MCP server on cloud infrastructure:
-
-**Popular Options:**
-- **Railway**: Simple deployment with environment variables
-- **Heroku**: Easy Git-based deployment  
-- **AWS Lambda**: Serverless with API Gateway
-- **Google Cloud Run**: Containerized deployment
-- **DigitalOcean App Platform**: Managed hosting
-- **Your own VPS**: Full control deployment
-
-**Example Railway Deployment:**
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Deploy your MCP server
-railway login
-railway init
-railway add  # Add environment variables for API keys
-railway up
-```
-
-**Example Docker Deployment:**
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY . .
-RUN pip install paymcp
-CMD ["python", "server.py"]
-```
-
-### ❌ STDIO Mode (Prohibited)
-
-**If you use PayMCP – never allow users to download your code and run it in STDIO mode:**
-- Users would download your server code
-- Payment API keys would be exposed
-- Creates massive security vulnerability
-- Violates payment provider terms of service
 
 Need help? Check our [troubleshooting guide](./troubleshooting) or [open an issue](https://github.com/PayMCP/paymcp/issues).

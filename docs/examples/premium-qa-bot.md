@@ -4,6 +4,9 @@ title: "Example: Premium Q&A Bot"
 description: Implement freemium model with free basic answers and paid premium features
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Premium Q&A Bot
 
 Learn how to implement a freemium model where basic Q&A is free, but premium features like detailed analysis, sources, and expert-level responses require payment.
@@ -32,14 +35,6 @@ from paymcp import PayMCP, price, PaymentFlow
 mcp = FastMCP("Expert Q&A Assistant")
 
 ## Setup
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
 from mcp.server.fastmcp import FastMCP, Context
 from paymcp import PayMCP, price
 from paymcp.providers import StripeProvider
@@ -49,8 +44,6 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
 
 ### 2. Free Tier - Basic Q&A
-
-```python
 @mcp.tool()
 async def ask_question_free(
     question: str,
@@ -289,32 +282,49 @@ response = await ask_question_premium(
 
 ### Value Demonstration
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 # Show value difference clearly
 FREE_EXAMPLE = "Basic answer: AI is machine learning technology."
 
 PREMIUM_EXAMPLE = """
-Detailed answer: Artificial Intelligence encompasses multiple technologies including machine learning, neural networks, and natural language processing. 
+Detailed answer: Artificial Intelligence encompasses multiple technologies...
 
 Key applications include:
 • Healthcare diagnostics and drug discovery
 • Autonomous vehicles and transportation
-• Financial fraud detection and trading
 
 Sources:
 • MIT Technology Review: "AI in Healthcare" (2024)
 • Stanford AI Index Report (2024)
-• Nature Medicine: "AI Diagnostics Study" (2024)
 
 Related topics: Machine Learning, Deep Learning, Neural Networks
 """
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-## Next Steps
+```typescript
+// Show value difference clearly
+const FREE_EXAMPLE = "Basic answer: AI is machine learning technology.";
 
-- **[Implement Usage Analytics](../quickstart#production-checklist)** - Track user behavior
-- **[A/B Test Pricing](../providers/stripe)** - Optimize conversion rates  
-- **[Multi-Provider Support](../providers/walleot)** - Accept crypto payments
+const PREMIUM_EXAMPLE = `
+Detailed answer: Artificial Intelligence encompasses multiple technologies...
 
-This freemium model demonstrates how PayMCP enables sophisticated pricing strategies that maximize both user adoption and revenue.
+Key applications include:
+• Healthcare diagnostics and drug discovery
+• Autonomous vehicles and transportation
+
+Sources:
+• MIT Technology Review: "AI in Healthcare" (2024)
+• Stanford AI Index Report (2024)
+
+Related topics: Machine Learning, Deep Learning, Neural Networks
+`;
+```
+
+</TabItem>
+</Tabs>

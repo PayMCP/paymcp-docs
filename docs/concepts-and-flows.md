@@ -8,48 +8,63 @@ description: Understanding PayMCP architecture and choosing the right payment fl
 
 PayMCP provides flexible payment flows to handle different interaction patterns between your MCP tools and users/agents. Choose the flow that best fits your application's needs.
 
-## Core Concepts
-
-### Payment Providers
+## Payment Providers
 
 PayMCP provides an extensible provider system that abstracts payment providers behind a common interface. Providers can be supplied in multiple ways to give you maximum flexibility:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-# Same tool works with any provider configuration style
 @price(amount=1.00, currency="USD")
 def process_data(input: str, ctx: Context) -> str:
     """Process input data"""
     return "Tool executed successfully"
 ```
 
-#### Configuration Methods
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-**1. Config Mapping (Existing Behavior)**
-```python
-PayMCP(mcp, providers={
-    "stripe": {"apiKey": "sk_test_..."},
-    "walleot": {"apiKey": "wk_test_..."}
-})
+```typescript
+server.registerTool(
+  "process_data",
+  {
+    description: "Process input data",
+    inputSchema: { input: z.string() },
+    price: { amount: 1.00, currency: "USD" },
+  },
+  async ({ input }, ctx) => {
+    return { content: [{ type: "text", text: "Tool executed successfully" }] };
+  }
+);
 ```
 
-**2. Ready-Made Instances**
-```python
-from paymcp.providers import StripeProvider, WalleotProvider
+</TabItem>
+</Tabs>
 
-PayMCP(mcp, providers={
-    "stripe": StripeProvider(apiKey="sk_test_..."),
-    "custom": MyCustomProvider(api_key="...")
-})
+### Configuration Methods
+#### Recommended Provider Development
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp.providers import StripeProvider
+
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 ```
 
-**3. List of Instances**
-```python
-PayMCP(mcp, providers=[
-    StripeProvider(apiKey=os.getenv("STRIPE_API_KEY")),
-    WalleotProvider(api_key=os.getenv("WALLEOT_API_KEY")),
-    MyProvider(...)
-])
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { StripeProvider } from 'paymcp/providers';
+
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 ```
+
+</TabItem>
+</Tabs>
 
 This flexibility allows you to:
 - Mix different configuration styles in the same setup
@@ -61,6 +76,9 @@ This flexibility allows you to:
 
 Creating custom providers is straightforward. Any provider must subclass `BasePaymentProvider` and implement the required methods:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 from paymcp.providers import BasePaymentProvider
 
@@ -70,36 +88,83 @@ class MyProvider(BasePaymentProvider):
         super().__init__(**kwargs)
     
     def create_payment(self, amount: float, currency: str, description: str):
-        # Implement payment creation logic
         # Return (payment_id, payment_url)
-        payment_id = self._create_payment_with_api(amount, currency, description)
-        payment_url = f"https://myprovider.com/pay/{payment_id}"
-        return payment_id, payment_url
+        return "payment_id", f"https://myprovider.com/pay/payment_id"
     
     def get_payment_status(self, payment_id: str) -> str:
-        # Return "paid", "pending", "failed", or "cancelled"
-        return self._check_payment_status(payment_id)
+        return "paid"
 
-# Use with any configuration method
 PayMCP(mcp, providers=[MyProvider(api_key="...")])
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { BasePaymentProvider } from 'paymcp/providers';
+
+class MyProvider extends BasePaymentProvider {
+    constructor(apiKey: string, options?: any) {
+        super(options);
+        this.apiKey = apiKey;
+    }
+    
+    createPayment(amount: number, currency: string, description: string): [string, string] {
+        // Return [payment_id, payment_url]
+        return ["payment_id", "https://myprovider.com/pay/payment_id"];
+    }
+    
+    getPaymentStatus(paymentId: string): string {
+        return "paid";
+    }
+}
+
+new PayMCP(mcp, { providers: [new MyProvider({ api_key: "..." })] });
+```
+
+</TabItem>
+</Tabs>
+
 You can also register custom providers for use with config mappings:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 from paymcp.providers import register_provider
 
 register_provider("my-gateway", MyProvider)
 
-# Now use with config mapping
 PayMCP(mcp, providers={
     "my-gateway": {"api_key": "...", "custom_option": "value"}
 })
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { registerProvider } from 'paymcp/providers';
+
+registerProvider("my-gateway", MyProvider);
+
+new PayMCP(mcp, {
+    providers: {
+        "my-gateway": { api_key: "...", custom_option: "value" }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+
 ### Tool Decoration
 
 The `@price` decorator adds payment requirements to your MCP tools without changing their core functionality:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 # Regular MCP tool
@@ -112,8 +177,34 @@ def analyze_text(text: str, ctx: Context) -> dict:
 @mcp.tool()
 @price(amount=0.25, currency="USD")
 def analyze_text(text: str, ctx: Context) -> dict:
+    """Analyze text content and return insights"""
     return {"analysis": "detailed results"}
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// Regular MCP tool
+server.registerTool("analyze_text", {
+    description: "Analyze text content and return insights",
+    inputSchema: { text: z.string() }
+}, async ({ text }, ctx) => {
+    return { content: [{ type: "text", text: JSON.stringify({"analysis": "detailed results"}) }] };
+});
+
+// Same tool with payment requirement
+server.registerTool("analyze_text", {
+    description: "Analyze text content and return insights",
+    inputSchema: { text: z.string() },
+    price: { amount: 0.25, currency: "USD" }
+}, async ({ text }, ctx) => {
+    return { content: [{ type: "text", text: JSON.stringify({"analysis": "detailed results"}) }] };
+});
+```
+
+</TabItem>
+</Tabs>
 
 ## Payment Flows
 
@@ -178,13 +269,13 @@ MCP server: Executes generate_report() → Returns actual report
 ```
 
 **Advantages:**
-- ✅ Works with all MCP clients
-- ✅ Clear separation of payment and execution
-- ✅ User controls when to proceed
-- ✅ Can handle payment failures gracefully
+- Works with all MCP clients
+- Clear separation of payment and execution
+- User controls when to proceed
+- Can handle payment failures gracefully
 
 **Disadvantages:**
-- ❌ Doubles the number of tools in your MCP server, which may confuse LLMs. It’s generally not recommended to have more than 3–4 tools in one MCP server.
+- Doubles the number of tools in your MCP server, which may confuse LLMs. It’s generally not recommended to have more than 3–4 tools in one MCP server.
 
 ### ELICITATION Flow
 
@@ -211,12 +302,12 @@ MCP server: Executes quick_analysis() → Returns result
 ```
 
 **Advantages:**
-- ✅ Single interaction
-- ✅ Seamless user experience
-- ✅ Immediate execution after payment
+- Single interaction
+- Seamless user experience
+- Immediate execution after payment
 
 **Disadvantages:**
-- ❌ Requires MCP client support for elicitation. See which clients support it here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
+- Requires MCP client support for elicitation. See which clients support it here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
 ### PROGRESS Flow
 
@@ -241,51 +332,14 @@ MCP server: Executes process_large_dataset() → Returns results
 ```
 
 **Advantages:**
-- ✅ Non-blocking payment process
-- ✅ Real-time progress updates
-- ✅ Automatic execution after payment
+- Non-blocking payment process
+- Real-time progress updates
+- Automatic execution after payment
 
 **Disadvantages:**
-- ❌ Holds the tool execution thread
-- ❌ Timeout duration depends on the client
-- ❌ Requires progress reporting support that can display progress messages (not just percentages)
-
-
-## Advanced Configuration
-
-### Return URLs
-
-Some providers support custom return URLs after payment. Provider parameter names differ (success_url/cancel_url for Stripe, return_url for Adyen, etc.). These will be handled at the PayMCP level in future versions.
-
-### Secure Deployment
-
-PayMCP must be deployed as a hosted service to protect payment provider API keys:
-
-```python
-# Deploy on your secure infrastructure
-# Users connect via network protocols
-# API keys never leave your servers
-```
-
-
-### Multiple Providers (coming soon)
-
-Configure multiple providers using any combination of configuration styles:
-
-```python
-from paymcp.providers import StripeProvider, WalleotProvider
-
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {"apiKey": "sk_..."},  # Config mapping
-        "paypal": PayPalProvider(client_id="...", client_secret="..."),  # Instance
-        "walleot": {"apiKey": "wk_..."}  # Config mapping
-    }
-)
-# Uses the first provider by default
-# TODO: Provider selection and failover coming soon
-```
+- Holds the tool execution thread
+- Timeout duration depends on the client
+- Requires progress reporting support that can display progress messages (not just percentages)
 
 
 ## Next Steps

@@ -14,15 +14,36 @@ Complete reference documentation for PayMCP classes, functions, and configuratio
 
 The main PayMCP class that integrates payment functionality into your MCP server.
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 class PayMCP:
     def __init__(
         self,
         mcp_instance,
-        providers: Union[dict, Iterable] = None,
+        providers: list = None,
         payment_flow: PaymentFlow = PaymentFlow.TWO_STEP
     )
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+class PayMCP {
+    constructor(
+        mcpInstance: FastMCP,
+        options: {
+            providers: Provider[],
+            payment_flow?: PaymentFlow
+        }
+    )
+}
+```
+
+</TabItem>
+</Tabs>
 
 #### Parameters
 
@@ -105,9 +126,23 @@ class PaymentFlow(str, Enum):
 
 Decorator to add payment requirements to MCP tools.
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 def price(amount: float, currency: str = "USD")
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// In registerTool options:
+price: { amount: number, currency?: string }
+```
+
+</TabItem>
+</Tabs>
 
 #### Parameters
 
@@ -156,6 +191,9 @@ server.registerTool(
 
 All payment providers must inherit from `BasePaymentProvider` and implement the required methods.
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 from paymcp.providers import BasePaymentProvider
 
@@ -166,18 +204,46 @@ class MyProvider(BasePaymentProvider):
     
     def create_payment(self, amount: float, currency: str, description: str) -> tuple[str, str]:
         """Create a payment and return (payment_id, payment_url)"""
-        # Implementation specific to your provider
         return "payment_id", "https://myprovider.com/pay/payment_id"
     
     def get_payment_status(self, payment_id: str) -> str:
         """Return payment status: 'paid', 'pending', 'failed', or 'cancelled'"""
-        # Implementation specific to your provider
         return "paid"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { BasePaymentProvider } from 'paymcp/providers';
+
+class MyProvider extends BasePaymentProvider {
+    constructor(apiKey: string, options?: any) {
+        super(options);
+        this.apiKey = apiKey;
+    }
+    
+    createPayment(amount: number, currency: string, description: string): [string, string] {
+        // Create a payment and return [payment_id, payment_url]
+        return ["payment_id", "https://myprovider.com/pay/payment_id"];
+    }
+    
+    getPaymentStatus(paymentId: string): string {
+        // Return payment status: 'paid', 'pending', 'failed', or 'cancelled'
+        return "paid";
+    }
+}
+```
+
+</TabItem>
+</Tabs>
 
 ### Provider Registration
 
 Register custom providers for use with config mappings:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 from paymcp.providers import register_provider
@@ -190,9 +256,31 @@ PayMCP(mcp, providers={
 })
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { registerProvider } from 'paymcp/providers';
+
+registerProvider("my-gateway", MyProvider);
+
+// Now use with config mapping
+new PayMCP(mcp, {
+    providers: {
+        "my-gateway": { api_key: "...", custom_option: "value" }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
 ### Class Path Configuration
 
 Use fully-qualified class paths in config:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 PayMCP(mcp, providers={
@@ -203,6 +291,24 @@ PayMCP(mcp, providers={
     }
 })
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+new PayMCP(mcp, {
+    providers: {
+        "custom": {
+            class: "my_package.providers:MyProvider",
+            api_key: "...",
+            custom_config: "value"
+        }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
 
 ## Provider Configuration
 

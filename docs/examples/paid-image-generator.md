@@ -53,8 +53,8 @@ new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
 ### 2. Image Generation Tools
 
-<details>
-<summary>Python</summary>
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 # Basic tier - affordable option
@@ -73,7 +73,7 @@ async def generate_ai_image(
     
     valid_ratios = ["1:1", "16:9", "9:16", "4:3"]
     if aspect_ratio not in valid_ratios:
-        raise ValueError(f"Aspect ratio must be one of: \{valid_ratios\}")
+        raise ValueError(f"Aspect ratio must be one of: {valid_ratios}")
     
     # Generate image (this is where your AI model runs)
     image_url = await generate_ai_image(
@@ -84,20 +84,18 @@ async def generate_ai_image(
         resolution="512x512"
     )
     
-    return \{
-        "image_url": image_url,
-        "prompt": prompt,
-        "quality": "basic",
-        "resolution": "512x512",
-        "aspect_ratio": aspect_ratio,
-        "generation_time": "~30 seconds"
-    \}
+    return dict(
+        image_url=image_url,
+        prompt=prompt,
+        quality="basic",
+        resolution="512x512",
+        aspect_ratio=aspect_ratio,
+        generation_time="~30 seconds"
+    )
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
 // Basic tier - affordable option
@@ -146,9 +144,15 @@ async function generateImageBasic(
 }
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
-# Premium tier - higher quality
+### Premium Image Generation
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
 @mcp.tool()
 @price(amount=0.75, currency="USD")
 async def generate_premium_ai_image(
@@ -164,57 +168,142 @@ async def generate_premium_ai_image(
         
     valid_styles = ["photorealistic", "artistic", "cartoon", "abstract"]
     if style not in valid_styles:
-        raise ValueError(f"Style must be one of: \{valid_styles\}")
+        raise ValueError(f"Style must be one of: {valid_styles}")
     
     # Generate higher quality image
     image_url = await generate_ai_image(
-        prompt=prompt + f", \{style\} style",
+        prompt=prompt + f", {style} style",
         quality="premium", 
-        aspect_ratio=aspect_ratio,
         steps=50,  # More steps = higher quality
         resolution="1024x1024"
     )
     
-    return \{
-        "image_url": image_url,
-        "prompt": prompt,
-        "style": style,
-        "quality": "premium",
-        "resolution": "1024x1024", 
-        "aspect_ratio": aspect_ratio,
-        "generation_time": "~60 seconds"
-    \}
+    return dict(
+        image_url=image_url,
+        prompt=prompt,
+        style=style,
+        quality="premium",
+        resolution="1024x1024", 
+        generation_time="~60 seconds"
+    )
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "generate_premium_ai_image",
+  {
+    description: "Generate a high-quality AI image with custom art style",
+    inputSchema: { 
+      prompt: z.string(),
+      style: z.string().default("photorealistic")
+    },
+    price: { amount: 0.75, currency: "USD" },
+  },
+  async ({ prompt, style }, ctx) => {
+    // Validate inputs
+    if (prompt.trim().length < 5) {
+        throw new Error("Prompt must be at least 5 characters long");
+    }
+    
+    const validStyles = ["photorealistic", "artistic", "cartoon", "abstract"];
+    if (!validStyles.includes(style)) {
+        throw new Error(`Style must be one of: ${validStyles.join(', ')}`);
+    }
+    
+    // Generate higher quality image
+    const imageUrl = await generateAiImage(`${prompt}, ${style} style`, {
+        quality: "premium",
+        steps: 50,
+        resolution: "1024x1024"
+    });
+    
+    return {
+        image_url: imageUrl,
+        prompt,
+        style,
+        quality: "premium",
+        resolution: "1024x1024",
+        generation_time: "~60 seconds"
+    };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 ## Usage Examples
 
 ### Basic Image Generation
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 # User calls the tool
-result = await generate_image_basic(
+result = await generate_ai_image(
     prompt="A beautiful sunset over mountains",
     aspect_ratio="16:9"
 )
 
 # Payment flow:
 # 1. User gets payment link for $0.25
-# 2. User pays via Stripe/PayPal/etc
+# 2. User pays via provider
 # 3. Image generation starts automatically
 # 4. User receives image URL and metadata
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// User calls the tool
+const result = await generateAiImage({
+    prompt: "A beautiful sunset over mountains",
+    aspectRatio: "16:9"
+});
+
+// Payment flow:
+// 1. User gets payment link for $0.25
+// 2. User pays via provider
+// 3. Image generation starts automatically
+// 4. User receives image URL and metadata
+```
+
+</TabItem>
+</Tabs>
+
 ### Premium Quality with Style
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-result = await generate_image_premium(
+result = await generate_premium_ai_image(
     prompt="A majestic dragon flying over a medieval castle",
-    style="artistic",
-    aspect_ratio="1:1"
+    style="artistic"
 )
 
 # Returns higher resolution (1024x1024) artistic image
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+const result = await generatePremiumAiImage({
+    prompt: "A majestic dragon flying over a medieval castle",
+    style: "artistic"
+});
+
+// Returns higher resolution (1024x1024) artistic image
+```
+
+</TabItem>
+</Tabs>
 
 ## Key Benefits
 
@@ -240,12 +329,3 @@ result = await generate_image_premium(
 | **Basic** | $0.25 | 512x512 | Good | Quick concepts, drafts |
 | **Premium** | $0.75 | 1024x1024 | High | Social media, presentations |
 | **Ultra** | $1.99 | 2048x2048 | Maximum | Professional, print-ready |
-
-## Next Steps
-
-- **[Deploy to Production](../quickstart#production-checklist)** - Go live checklist
-- **[Add More Providers](../providers/walleot)** - Accept crypto payments
-- **[Implement Analytics](#)** - Track usage and revenue
-- **[Scale Infrastructure](#)** - Handle high demand
-
-This example demonstrates how PayMCP enables new business models by making it easy to charge for expensive AI operations.
