@@ -22,55 +22,31 @@ Stripe is one of the most popular payment processors globally, supporting credit
 2. Navigate to **Developers** → **API Keys**
 3. Copy your **Secret Key** (starts with `sk_test_` for testing)
 
-### 2. Configuration Options
+### 2. Configuration
 
-PayMCP supports multiple ways to configure the Stripe provider:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-#### Option 1: Config Mapping (Default)
-
-<details>
-<summary>Python</summary>
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-from paymcp import PayMCP, PaymentFlow
+from paymcp.providers import StripeProvider
 
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": "sk_test_51...",  # Your secret key
-            "success_url": "https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-            "cancel_url": "https://yourapp.com/cancel"
-        }
-    },
-    payment_flow=PaymentFlow.TWO_STEP
-)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { PayMCP, PaymentFlow } from 'paymcp';
+import { StripeProvider } from 'paymcp/providers';
 
-new PayMCP(
-    mcp,
-    {
-        providers: {
-            "stripe": {
-                apiKey: "sk_test_51...",  // Your secret key
-                success_url: "https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-                cancel_url: "https://yourapp.com/cancel"
-            }
-        },
-        payment_flow: PaymentFlow.TWO_STEP
-    }
-);
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 #### Option 2: Provider Instance
 
@@ -115,10 +91,9 @@ PayMCP(
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def test_tool(message: str, ctx: Context) -> str:
-    """Tool description"""
-    # Your code goes here
-    return f"Here is your result: {message}"
+def test_stripe_payment(message: str, ctx: Context) -> str:
+    """Test Stripe payment integration"""
+    return f"Stripe payment successful: {message}"
 ```
 
 Test with Stripe's test card: `4242 4242 4242 4242`
@@ -229,8 +204,8 @@ providers = {
 # Returns appropriate error messages to the user
 @mcp.tool()
 @price(amount=10.00, currency="USD")
-def expensive_operation(data: str, ctx: Context) -> str:
-    # This will only execute if payment succeeds
+def process_expensive_data(data: str, ctx: Context) -> str:
+    """Process data using expensive computation"""
     return process_data(data)
 ```
 
@@ -249,7 +224,6 @@ Stripe has rate limits. PayMCP handles retries automatically:
 
 - **Never expose secret keys** in client-side code
 - **Use test keys** during development
-- **Validate webhook signatures** to prevent spoofing
 
 ### User Experience
 

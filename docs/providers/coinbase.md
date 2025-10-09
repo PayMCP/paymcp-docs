@@ -26,77 +26,64 @@ Coinbase Commerce enables cryptocurrency payments with support for Bitcoin, Ethe
 3. Generate an **API Key** in Settings
 4. Configure withdrawal settings
 
-### 2. Configuration Options
+### 2. Configuration
 
-PayMCP supports multiple ways to configure the Coinbase Commerce provider:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-#### Option 1: Config Mapping (Default)
-
-```python
-from paymcp import PayMCP, PaymentFlow
-
-PayMCP(
-    mcp,
-    providers={
-        "coinbase": {
-            "api_key": "YOUR_API_KEY",
-            "success_url": "https://yourapp.com/success",
-            "cancel_url": "https://yourapp.com/cancel",
-            "confirm_on_pending": False  # Wait for full confirmation
-        }
-    },
-    payment_flow=PaymentFlow.PROGRESS  # Recommended for crypto
-)
-```
-
-#### Option 2: Provider Instance
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-from paymcp import PayMCP, PaymentFlow
 from paymcp.providers import CoinbaseProvider
 
-coinbase_provider = CoinbaseProvider(
-    api_key="YOUR_API_KEY",
-    success_url="https://yourapp.com/success",
-    cancel_url="https://yourapp.com/cancel",
-    confirm_on_pending=False
-)
-
-PayMCP(
-    mcp,
-    providers={"coinbase": coinbase_provider},
-    payment_flow=PaymentFlow.PROGRESS
-)
+PayMCP(mcp, providers=[CoinbaseProvider(api_key="YOUR_API_KEY")])
 ```
 
-#### Option 3: List of Instances
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-```python
-from paymcp import PayMCP, PaymentFlow
-from paymcp.providers import CoinbaseProvider
+```typescript
+import { CoinbaseProvider } from 'paymcp/providers';
 
-PayMCP(
-    mcp,
-    providers=[
-        CoinbaseProvider(
-            api_key="YOUR_API_KEY",
-            success_url="https://yourapp.com/success",
-            cancel_url="https://yourapp.com/cancel",
-            confirm_on_pending=False
-        )
-    ],
-    payment_flow=PaymentFlow.PROGRESS
-)
+new PayMCP(mcp, { providers: [new CoinbaseProvider({ api_key: "YOUR_API_KEY" })] });
 ```
+
+</TabItem>
+</Tabs>
 
 ### 3. Test Your Integration
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
 @price(amount=1.00, currency="USD")
-def crypto_test(item: str, ctx: Context) -> str:
+def test_crypto_payment(item: str, ctx: Context) -> str:
+    """Test cryptocurrency payment"""
     return f"Crypto payment successful for: {item}"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "test_crypto_payment",
+  {
+    description: "Test cryptocurrency payment",
+    inputSchema: { item: z.string() },
+    price: { amount: 1.00, currency: "USD" },
+  },
+  async ({ item }, ctx) => {
+    return { content: [{ type: "text", text: `Crypto payment successful for: ${item}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 ## Configuration Options
 
@@ -111,23 +98,6 @@ providers = {
 }
 ```
 
-## Supported Currencies
-
-### Fiat Pricing (Recommended)
-
-```python
-@price(amount=1.00, currency="USD")   # Auto-converts to crypto
-@price(amount=1.50, currency="EUR")   # European pricing
-@price(amount=5.00, currency="GBP")   # British pricing
-```
-
-### Cryptocurrency Pricing
-
-```python
-@price(amount=0.00005, currency="BTC")  # Bitcoin
-@price(amount=0.001, currency="ETH")    # Ethereum
-@price(amount=1.00, currency="USDC")    # USD Coin (stablecoin)
-```
 
 ## Payment Flow
 
@@ -144,8 +114,8 @@ PayMCP(
 
 @mcp.tool()
 @price(amount=2.50, currency="USD")
-def crypto_service(data: str, ctx: Context) -> str:
-    # User sees progress while payment confirms on blockchain
+def process_data_with_crypto(data: str, ctx: Context) -> str:
+    """Process data using cryptocurrency payment"""
     return f"Crypto service completed for: {data}"
 ```
 
@@ -281,7 +251,6 @@ Users pay network fees in addition to your price:
 - [ ] Switch to production API key
 - [ ] Test with small real amounts
 - [ ] Configure success/cancel URLs for production
-- [ ] Set up webhook notifications (optional)
 - [ ] Review settlement preferences
 - [ ] Understand tax implications of crypto payments
 

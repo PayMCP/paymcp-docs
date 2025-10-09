@@ -33,10 +33,10 @@ PayMCP contains sensitive payment provider API keys that must never be exposed t
 
 ```python
 # These are SECRET and must stay on YOUR server
-providers = {
-    "stripe": {"apiKey": "sk_live_..."},  # NEVER expose this
-    "walleot": {"apiKey": "wk_live_..."}  # NEVER expose this
-}
+providers = [
+    StripeProvider(apiKey="sk_live_..."),  # NEVER expose this
+    WalleotProvider(api_key="wk_live_...")  # NEVER expose this
+]
 ```
 
 ### STDIO Mode is Incompatible
@@ -57,11 +57,12 @@ providers = {
 # Deploy this on YOUR infrastructure, not user machines
 from mcp.server.fastmcp import FastMCP
 from paymcp import PayMCP
+from paymcp.providers import StripeProvider
 
 mcp = FastMCP("My Hosted AI Service")
-PayMCP(mcp, providers={
-    "stripe": {"apiKey": os.getenv("STRIPE_SECRET_KEY")}  # Secure on your server
-})
+PayMCP(mcp, providers=[
+    StripeProvider(apiKey=os.getenv("STRIPE_SECRET_KEY"))  # Secure on your server
+])
 
 # Users connect via HTTP/WebSocket, never see the keys
 ```
@@ -70,182 +71,138 @@ PayMCP(mcp, providers={
 
 ### 1. Initialize Your MCP Server
 
-<details>
-<summary>Python</summary>
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 from mcp.server.fastmcp import FastMCP, Context
-from paymcp import PayMCP, price, PaymentFlow
+from paymcp import PayMCP, price
+from paymcp.providers import StripeProvider
 
-# Create your MCP server
 mcp = FastMCP("My AI Assistant")
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
 import { FastMCP } from '@mcp/server-fastmcp';
-import { PayMCP, price, PaymentFlow } from 'paymcp';
+import { PayMCP, price } from 'paymcp';
+import { StripeProvider } from 'paymcp/providers';
 import type { Context } from '@mcp/server-fastmcp';
 
-// Create your MCP server
 const mcp = new FastMCP("My AI Assistant");
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 ### 2. Configure PayMCP
 
-<details>
-<summary>Python</summary>
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-from paymcp.providers import StripeProvider
-
-PayMCP(
-    mcp,
-    providers=[
-        StripeProvider(apiKey="sk_test_51...")
-    ]
-)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { StripeProvider } from 'paymcp/providers';
-
-new PayMCP(
-    mcp,
-    {
-        providers: [
-            new StripeProvider({ apiKey: "sk_test_51..." })
-        ]
-    }
-);
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
-<details>
-<summary>More Provider Configuration Examples</summary>
-
-```python
-# Walleot (Crypto payments)
-PayMCP(mcp, providers={
-    "walleot": {"apiKey": "wk_test_..."}
-})
-
-# PayPal
-PayMCP(mcp, providers={
-    "paypal": {
-        "client_id": "your_client_id",
-        "client_secret": "your_client_secret",
-        "sandbox": True
-    }
-})
-
-# Custom provider with class path
-PayMCP(mcp, providers={
-    "custom": {
-        "class": "my_package.providers:MyProvider",
-        "apiKey": "...",
-        "custom_config": "value"
-    }
-})
-
-# Mixed configuration styles
-PayMCP(mcp, providers={
-    "stripe": {"apiKey": "sk_test_..."},  # Config dict
-    "walleot": WalleotProvider(api_key="wk_test_..."),  # Instance
-    "custom": MyProvider(...)  # Custom instance
-})
-```
-
-</details>
 
 ## Adding Pricing
 
-### Simple Tool Pricing
-
-Add the `@price` decorator to any MCP tool:
-
-<details>
-<summary>Python</summary>
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def generate_image(prompt: str, ctx: Context) -> str:
-    """Generate an AI image from a text prompt."""
-    # Your image generation logic here
+def generate_ai_image(prompt: str, ctx: Context) -> str:
+    """Generate an AI image from a text prompt"""
     return f"Generated image for: {prompt}"
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
-@mcp.tool()
-@price({ amount: 0.50, currency: "USD" })
-async function generateImage(prompt: string, ctx: Context): Promise<string> {
-    // Generate an AI image from a text prompt
-    // Your image generation logic here
-    return `Generated image for: ${prompt}`;
-}
+server.registerTool(
+  "generate_ai_image",
+  {
+    description: "Generate an AI image from a text prompt",
+    inputSchema: { prompt: z.string() },
+    price: { amount: 0.50, currency: "USD" },
+  },
+  async ({ prompt }, ctx) => {
+    return { content: [{ type: "text", text: `Generated image for: ${prompt}` }] };
+  }
+);
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 ### Different Price Points
 
-<details>
-<summary>Python</summary>
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
-@price(amount=0.05, currency="USD")  # Micro-payment
-def check_grammar(text: str, ctx: Context) -> str:
-    """Check and correct grammar in text."""
+@price(amount=0.05, currency="USD")
+def check_text_grammar(text: str, ctx: Context) -> str:
+    """Check and correct grammar in text"""
     return corrected_text
 
 @mcp.tool()
-@price(amount=2.99, currency="USD")  # Premium feature
-def detailed_analysis(document: str, ctx: Context) -> dict:
-    """Perform detailed document analysis."""
+@price(amount=2.99, currency="USD")
+def analyze_document(document: str, ctx: Context) -> dict:
+    """Perform detailed document analysis"""
     return analysis_results
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
-@mcp.tool()
-@price({ amount: 0.05, currency: "USD" })  // Micro-payment
-async function checkGrammar(text: string, ctx: Context): Promise<string> {
-    // Check and correct grammar in text
-    return correctedText;
-}
+server.registerTool(
+  "check_text_grammar",
+  {
+    description: "Check and correct grammar in text",
+    inputSchema: { text: z.string() },
+    price: { amount: 0.05, currency: "USD" },
+  },
+  async ({ text }, ctx) => {
+    return { content: [{ type: "text", text: correctedText }] };
+  }
+);
 
-@mcp.tool()
-@price({ amount: 2.99, currency: "USD" })  // Premium feature
-async function detailedAnalysis(document: string, ctx: Context): Promise<object> {
-    // Perform detailed document analysis
-    return analysisResults;
-}
+server.registerTool(
+  "analyze_document",
+  {
+    description: "Perform detailed document analysis",
+    inputSchema: { document: z.string() },
+    price: { amount: 2.99, currency: "USD" },
+  },
+  async ({ document }, ctx) => {
+    return { content: [{ type: "text", text: JSON.stringify(analysisResults) }] };
+  }
+);
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 
 
@@ -257,8 +214,11 @@ Choose the payment flow that works best for your use case:
 
 Best for most applications. Splits payment into two steps:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-PayMCP(mcp, providers={"stripe": {...}}, payment_flow=PaymentFlow.TWO_STEP)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.TWO_STEP)
 
 # When user calls your tool:
 # 1. Returns payment link and confirmation method
@@ -266,27 +226,83 @@ PayMCP(mcp, providers={"stripe": {...}}, payment_flow=PaymentFlow.TWO_STEP)
 # 3. Tool executes after payment confirmation
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+new PayMCP(mcp, { 
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    payment_flow: PaymentFlow.TWO_STEP 
+});
+
+// When user calls your tool:
+// 1. Returns payment link and confirmation method
+// 2. User pays and calls confirm_toolname_payment()
+// 3. Tool executes after payment confirmation
+```
+
+</TabItem>
+</Tabs>
+
 ### ELICITATION (Interactive)
 
 For real-time interactions:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-PayMCP(mcp, providers={"stripe": {...}}, payment_flow=PaymentFlow.ELICITATION)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.ELICITATION)
 
 # Shows payment UI immediately when tool is called (if supported by client)
 # Waits for payment before proceeding
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+new PayMCP(mcp, { 
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    payment_flow: PaymentFlow.ELICITATION 
+});
+
+// Shows payment UI immediately when tool is called (if supported by client)
+// Waits for payment before proceeding
+```
+
+</TabItem>
+</Tabs>
+
 ### PROGRESS (Background Processing)
 
 For long-running operations:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-PayMCP(mcp, providers={"stripe": {...}}, payment_flow=PaymentFlow.PROGRESS)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.PROGRESS)
 
 # Shows payment link and progress indicator (if supported by client)
 # Automatically proceeds when payment is received
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+new PayMCP(mcp, { 
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    payment_flow: PaymentFlow.PROGRESS 
+});
+
+// Shows payment link and progress indicator (if supported by client)
+// Automatically proceeds when payment is received
+```
+
+</TabItem>
+</Tabs>
 
 See the list of MCP clients and their capabilities here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
@@ -294,22 +310,57 @@ See the list of MCP clients and their capabilities here: [https://modelcontextpr
 
 ### 1. Start Your Server
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 # server.py
 from mcp.server.fastmcp import FastMCP, Context
-from paymcp import PayMCP, price, PaymentFlow
+from paymcp import PayMCP, price
+from paymcp.providers import StripeProvider
 
 mcp = FastMCP("Test Server")
-PayMCP(mcp, providers={"stripe": {"apiKey": "sk_test_..."}})
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
 @mcp.tool()
-@price(amount=0.01, currency="USD")  # Test with 1 cent
-def hello_world(name: str, ctx: Context) -> str:
+@price(amount=0.01, currency="USD")
+def test_payment_integration(name: str, ctx: Context) -> str:
+    """Test payment integration with greeting"""
     return f"Hello, {name}! Payment successful."
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run()
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// server.ts
+import { FastMCP } from '@mcp/server-fastmcp';
+import { PayMCP, price } from 'paymcp';
+import { StripeProvider } from 'paymcp/providers';
+
+const mcp = new FastMCP("Test Server");
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+
+server.registerTool(
+  "test_payment_integration",
+  {
+    description: "Test payment integration with greeting",
+    inputSchema: { name: z.string() },
+    price: { amount: 0.01, currency: "USD" },
+  },
+  async ({ name }, ctx) => {
+    return { content: [{ type: "text", text: `Hello, ${name}! Payment successful.` }] };
+  }
+);
+
+mcp.run();
+```
+
+</TabItem>
+</Tabs>
 
 ### 2. Connect Your MCP Client
 
@@ -351,7 +402,6 @@ Before going live:
 - [ ] **CRITICAL: Verify hosted deployment** (NOT STDIO mode)
 - [ ] **CRITICAL: Confirm API keys are server-side only**
 - [ ] Switch to production API keys
-- [ ] Set up webhook endpoints (if required by provider)
 - [ ] Test with real small amounts
 - [ ] Implement proper error handling
 - [ ] Add logging and monitoring
@@ -381,79 +431,6 @@ Verify your API keys are correct and have the right permissions:
 providers={"stripe": {"apiKey": "sk_test_..."}}  # Should start with sk_test_ or sk_live_
 ```
 
-## Migration to 0.2.0
-
-### From Config Mapping to Provider Instances
-
-If you're upgrading from earlier versions, you can gradually migrate:
-
-```python
-# Before (0.1.x) - still works in 0.2.0
-PayMCP(mcp, providers={
-    "stripe": {"apiKey": "sk_test_..."}
-})
-
-# After (0.2.0+) - new provider instance approach
-from paymcp.providers import StripeProvider
-PayMCP(mcp, providers=[
-    StripeProvider(apiKey="sk_test_...")
-])
-```
-
-### Benefits of New Configuration Methods
-
-**Type Safety & IDE Support:**
-```python
-# Provider instances offer better type checking
-stripe_provider = StripeProvider(
-    apiKey="sk_test_...",
-    success_url="https://app.com/success",  # IDE autocomplete
-    cancel_url="https://app.com/cancel"     # Type validation
-)
-```
-
-**Dynamic Configuration:**
-```python
-# Easier to configure providers dynamically
-providers = []
-if os.getenv("STRIPE_API_KEY"):
-    providers.append(StripeProvider(apiKey=os.getenv("STRIPE_API_KEY")))
-if os.getenv("WALLEOT_API_KEY"):
-    providers.append(WalleotProvider(api_key=os.getenv("WALLEOT_API_KEY")))
-
-PayMCP(mcp, providers=providers)
-```
-
-### Custom Provider Development
-
-0.2.0 makes it easier to create and use custom providers:
-
-```python
-from paymcp.providers import BasePaymentProvider, register_provider
-
-class CustomProvider(BasePaymentProvider):
-    def create_payment(self, amount: float, currency: str, description: str):
-        return "payment_id", "https://example.com/pay"
-    
-    def get_payment_status(self, payment_id: str) -> str:
-        return "paid"
-
-# Option 1: Use directly as instance
-PayMCP(mcp, providers=[CustomProvider(api_key="...")])
-
-# Option 2: Register for config mapping
-register_provider("custom-gateway", CustomProvider)
-PayMCP(mcp, providers={"custom-gateway": {"api_key": "..."}})
-
-# Option 3: Use class path
-PayMCP(mcp, providers={
-    "custom": {
-        "class": "my_package.providers:CustomProvider",
-        "api_key": "...",
-        "custom_config": "value"
-    }
-})
-```
 
 ## Deployment Options
 

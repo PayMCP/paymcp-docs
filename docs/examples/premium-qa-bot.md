@@ -31,52 +31,22 @@ from paymcp import PayMCP, price, PaymentFlow
 # Initialize MCP server
 mcp = FastMCP("Expert Q&A Assistant")
 
-# Configure PayMCP (multiple options available in 0.2.0)
+## Setup
 
-# Option 1: Config mapping (traditional)
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": os.getenv("STRIPE_SECRET_KEY"),
-            "success_url": "https://yourapp.com/success",
-            "cancel_url": "https://yourapp.com/cancel"
-        }
-    },
-    payment_flow=PaymentFlow.ELICITATION  # Good for quick answers
-)
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-# Option 2: Provider instances (new in 0.2.0)
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from mcp.server.fastmcp import FastMCP, Context
+from paymcp import PayMCP, price
 from paymcp.providers import StripeProvider
-PayMCP(
-    mcp,
-    providers={
-        "stripe": StripeProvider(
-            apiKey=os.getenv("STRIPE_SECRET_KEY"),
-            success_url="https://yourapp.com/success",
-            cancel_url="https://yourapp.com/cancel"
-        )
-    },
-    payment_flow=PaymentFlow.ELICITATION
-)
 
-# Option 3: List of instances (new in 0.2.0)
-PayMCP(
-    mcp,
-    providers=[
-        StripeProvider(
-            apiKey=os.getenv("STRIPE_SECRET_KEY"),
-            success_url="https://yourapp.com/success",
-            cancel_url="https://yourapp.com/cancel"
-        )
-    ],
-    payment_flow=PaymentFlow.ELICITATION
-)
+mcp = FastMCP("Expert Q&A Assistant")
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
-# Simple rate limiting (in production, use Redis)
-user_usage = {}
-FREE_QUESTIONS_PER_DAY = 5
-```
 
 ### 2. Free Tier - Basic Q&A
 
@@ -340,60 +310,6 @@ Related topics: Machine Learning, Deep Learning, Neural Networks
 """
 ```
 
-## Advanced Configuration (0.2.0+)
-
-### Custom Provider with Class Path
-
-Using the class path configuration from the extensible provider system:
-
-```python
-# Custom provider with class path
-PayMCP(mcp, providers={
-    "custom": {
-        "class": "my_package.providers:QAProvider",
-        "api_key": "...",
-        "custom_config": "value"
-    }
-})
-```
-
-### Provider Registration
-
-Register custom providers for use with config mappings:
-
-```python
-from paymcp.providers import register_provider, BasePaymentProvider
-
-class QAProvider(BasePaymentProvider):
-    def create_payment(self, amount: float, currency: str, description: str):
-        return "unique-payment-id", "https://example.com/pay"
-    
-    def get_payment_status(self, payment_id: str) -> str:
-        return "paid"
-
-register_provider("qa-gateway", QAProvider)
-
-# Now use with config mapping
-PayMCP(mcp, providers={
-    "qa-gateway": {"api_key": "...", "custom_option": "value"}
-})
-```
-
-### Mixed Configuration for Freemium
-
-```python
-# Different providers for different tiers
-from paymcp.providers import WalleotProvider, CoinbaseProvider
-
-PayMCP(
-    mcp,
-    providers=[
-        WalleotProvider(api_key=os.getenv("WALLEOT_API_KEY")),  # For crypto users
-        CoinbaseProvider(api_key=os.getenv("COINBASE_API_KEY"))  # Alternative crypto
-    ]
-)
-# Note: The first provider in the list is used by default
-```
 
 ## Next Steps
 

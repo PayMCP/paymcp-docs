@@ -20,28 +20,56 @@ PayMCP is a lightweight SDK that helps you add monetization to your MCP-based to
 
 ## Quick Example
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 from mcp.server.fastmcp import FastMCP, Context
-from paymcp import PayMCP, price, PaymentFlow
+from paymcp import PayMCP, price
+from paymcp.providers import StripeProvider
 
 mcp = FastMCP("AI agent name")
 
-# Configure PayMCP with your provider
-from paymcp.providers import StripeProvider
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
-PayMCP(
-    mcp,
-    providers=[
-        StripeProvider(apiKey="sk_test_...")
-    ]
-)
-
-# Add pricing to any tool
 @mcp.tool()
 @price(amount=0.19, currency="USD")
-def add(a: int, b: int, ctx: Context) -> int:
+def add_numbers(a: int, b: int, ctx: Context) -> int:
+    """Add two numbers together"""
     return a + b
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { FastMCP } from '@mcp/server-fastmcp';
+import { PayMCP, price } from 'paymcp';
+import { StripeProvider } from 'paymcp/providers';
+import type { Context } from '@mcp/server-fastmcp';
+
+const mcp = new FastMCP("AI agent name");
+
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+
+server.registerTool(
+  "add_numbers",
+  {
+    description: "Add two numbers together",
+    inputSchema: { a: z.number(), b: z.number() },
+    price: { amount: 0.19, currency: "USD" },
+  },
+  async ({ a, b }, ctx) => {
+    return { content: [{ type: "text", text: String(a + b) }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 ## Payment Flows
 
@@ -50,7 +78,6 @@ PayMCP supports multiple payment flows to fit different use cases:
 - **[TWO_STEP](./concepts-and-flows#two_step-flow)** - Split into initiate/confirm steps (default, most compatible)
 - **[ELICITATION](./concepts-and-flows#elicitation-flow)** - Interactive payment during tool execution (requires elicitation capability from MCP Clients)
 - **[PROGRESS](./concepts-and-flows#progress-flow)** - Background payment with progress updates (requires progress capability from MCP Clients)
-- **[OOB](./concepts-and-flows#oob-flow-coming-soon)** - Out-of-band payment (coming soon)
 
 See the list of clients and their capabilities here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
@@ -59,7 +86,7 @@ See the list of clients and their capabilities here: [https://modelcontextprotoc
 | Provider | Status | Features |
 |----------|--------|----------|
 | **[Stripe](./providers/stripe)** | ✅ Available | Cards, ACH, international payments |
-| **[Walleot](./providers/walleot)** | ✅ Available | Crypto payments, instant settlement |
+| **[Walleot](./providers/walleot)** | ✅ Available | Pre-purchased credits, auto payments |
 | **[PayPal](./providers/paypal)** | ✅ Available | PayPal balance, cards, bank transfers |
 | **[Square](./providers/square)** | ✅ Available | Cards, in-person payments |
 | **[Adyen](./providers/adyen)** | ✅ Available | Global payments, 40+ countries |

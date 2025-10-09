@@ -32,102 +32,53 @@ class PayMCP:
 | `providers` | `Union[dict, Iterable]` | `{}` | Payment provider configurations (see Provider Configuration section) |
 | `payment_flow` | `PaymentFlow` | `TWO_STEP` | Payment flow strategy |
 
-#### Provider Configuration (New in 0.2.0)
+#### Provider Configuration
 
-PayMCP now supports multiple ways to configure providers:
+Use the canonical provider list format:
 
-**1. Config Mapping (existing behavior):**
 ```python
-providers = {
-    "stripe": {"apiKey": "sk_test_..."},
-    "walleot": {"apiKey": "wk_test_..."}
-}
+providers = [StripeProvider(apiKey="sk_test_...")]
 ```
 
-**2. Ready-made instances:**
-```python
-from paymcp.providers import StripeProvider, WalleotProvider
-
-providers = {
-    "stripe": StripeProvider(apiKey="sk_test_..."),
-    "custom": MyCustomProvider(api_key="...")
-}
-```
-
-**3. List of instances:**
-```python
-providers = [
-    StripeProvider(apiKey="sk_test_..."),
-    WalleotProvider(api_key="wk_test_..."),
-    MyProvider(...)
-]
-```
+Alternative formats are also supported (config mapping, mixed styles) - see the Alternative Configuration section below.
 
 #### Examples
 
-<details>
-<summary>Python</summary>
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 from paymcp import PayMCP, PaymentFlow
 from paymcp.providers import StripeProvider
 
-# Config mapping (traditional)
-paymcp = PayMCP(
-    mcp_instance=mcp,
-    providers={
-        "stripe": {"apiKey": "sk_test_..."},
-        "walleot": {"apiKey": "wk_test_..."}
-    },
-    payment_flow=PaymentFlow.ELICITATION
-)
-
-# Provider instances
-paymcp = PayMCP(
-    mcp_instance=mcp,
-    providers=[
-        StripeProvider(apiKey="sk_test_..."),
-        WalleotProvider(api_key="wk_test_...")
-    ],
+PayMCP(
+    mcp,
+    providers=[StripeProvider(apiKey="sk_test_...")],
     payment_flow=PaymentFlow.TWO_STEP
 )
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
 import { PayMCP, PaymentFlow } from 'paymcp';
-import { StripeProvider, WalleotProvider } from 'paymcp/providers';
+import { StripeProvider } from 'paymcp/providers';
 
-// Config mapping (traditional)
-const paymcp = new PayMCP(
+new PayMCP(
     mcp,
     {
-        providers: {
-            "stripe": { apiKey: "sk_test_..." },
-            "walleot": { apiKey: "wk_test_..." }
-        },
-        payment_flow: PaymentFlow.ELICITATION
-    }
-);
-
-// Provider instances
-const paymcp2 = new PayMCP(
-    mcp,
-    {
-        providers: [
-            new StripeProvider({ apiKey: "sk_test_..." }),
-            new WalleotProvider({ api_key: "wk_test_..." })
-        ],
+        providers: [new StripeProvider({ apiKey: "sk_test_..." })],
         payment_flow: PaymentFlow.TWO_STEP
     }
 );
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 ### PaymentFlow
 
@@ -138,7 +89,6 @@ class PaymentFlow(str, Enum):
     TWO_STEP = "two_step"
     ELICITATION = "elicitation" 
     PROGRESS = "progress"
-    OOB = "oob"
 ```
 
 #### Flow Types
@@ -148,7 +98,6 @@ class PaymentFlow(str, Enum):
 | `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
 | `ELICITATION` | Interactive payment during execution | Real-time interactions |
 | `PROGRESS` | Background payment with progress updates | Real-time interactions  |
-| `OOB` | Out-of-band  | Coming soon |
 
 ## Decorators
 
@@ -169,38 +118,37 @@ def price(amount: float, currency: str = "USD")
 
 #### Example
 
-<details>
-<summary>Python</summary>
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def generate_report(input: str, ctx: Context) -> str:
-    """Tool description"""
-    # Your code goes here
-    return f"Processed: {input}"
+def generate_data_report(input: str, ctx: Context) -> str:
+    """Generate a data report from input"""
+    return f"Report: {input}"
 ```
 
-</details>
-
-<details>
-<summary>JavaScript/TypeScript</summary>
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
 ```typescript
-@mcp.tool()
-@price({ amount: 0.50, currency: "USD" })
-async function generateReport(input: string, ctx: Context): Promise<string> {
-    // Tool description
-    // Your code goes here
-    return `Processed: ${input}`;
-}
+server.registerTool(
+  "generate_data_report",
+  {
+    description: "Generate a data report from input",
+    inputSchema: { input: z.string() },
+    price: { amount: 0.50, currency: "USD" },
+  },
+  async ({ input }, ctx) => {
+    return { content: [{ type: "text", text: `Report: ${input}` }] };
+  }
+);
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
-#### Supported Currencies
-
-Currency support depends on your payment provider. Some providers (like Stripe) allow you to set prices in one currency but accept payments in many others, handling conversion automatically. Please check your provider’s documentation for the full list of supported currencies and conversion rules.
 
 ## Custom Provider Development
 
@@ -261,13 +209,7 @@ PayMCP(mcp, providers={
 ### Stripe
 
 ```python
-providers = {
-    "stripe": {
-        "apiKey": str,              # Required: Stripe secret key
-        "success_url": str,         # Optional: Success redirect URL
-        "cancel_url": str,          # Optional: Cancel redirect URL
-    }
-}
+providers = [StripeProvider(apiKey="sk_test_...")]
 ```
 
 #### Parameters
@@ -275,8 +217,6 @@ providers = {
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `apiKey` | `str` | Yes | Stripe secret key (sk_test_... or sk_live_...) |
-| `success_url` | `str` | No | URL to redirect after successful payment |
-| `cancel_url` | `str` | No | URL to redirect after cancelled payment |
 
 ### Walleot
 
@@ -297,15 +237,7 @@ providers = {
 ### PayPal
 
 ```python
-providers = {
-    "paypal": {
-        "client_id": str,           # Required: PayPal client ID
-        "client_secret": str,       # Required: PayPal client secret
-        "sandbox": bool,            # Optional: Use sandbox environment
-        "success_url": str,         # Optional: Success redirect URL
-        "cancel_url": str,          # Optional: Cancel redirect URL
-    }
-}
+providers = [PayPalProvider(client_id="...", client_secret="...", sandbox=True)]
 ```
 
 #### Parameters
@@ -315,8 +247,6 @@ providers = {
 | `client_id` | `str` | Yes | - | PayPal application client ID |
 | `client_secret` | `str` | Yes | - | PayPal application client secret |
 | `sandbox` | `bool` | No | `True` | Use PayPal sandbox environment |
-| `success_url` | `str` | No | - | Success redirect URL |
-| `cancel_url` | `str` | No | - | Cancel redirect URL |
 
 ### Square
 
@@ -367,14 +297,7 @@ providers = {
 ### Coinbase Commerce
 
 ```python
-providers = {
-    "coinbase": {
-        "api_key": str,             # Required: Coinbase Commerce API key
-        "success_url": str,         # Optional: Success redirect URL
-        "cancel_url": str,          # Optional: Cancel redirect URL
-        "confirm_on_pending": bool, # Optional: Accept pending payments
-    }
-}
+providers = [CoinbaseProvider(api_key="...")]
 ```
 
 #### Parameters
@@ -382,9 +305,6 @@ providers = {
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `api_key` | `str` | Yes | - | Coinbase Commerce API key |
-| `success_url` | `str` | No | - | Success redirect URL |
-| `cancel_url` | `str` | No | - | Cancel redirect URL |
-| `confirm_on_pending` | `bool` | No | `False` | Accept payments on pending status |
 
 ## Payment Flow Details
 
@@ -449,9 +369,6 @@ await ctx.report_progress(
 )
 ```
 
-### OOB Flow
-
-The OOB (Out-of-Band) flow is planned for future releases.
 
 
 ## Context Requirements
@@ -580,16 +497,10 @@ print(f"PayMCP version: {paymcp.__version__}")
 
 ### Changelog
 
-#### 0.2.0 (Latest)
-
-**Added:**
-- **Extensible provider system**: Providers can now be supplied in multiple ways:
-  - As config mapping `{name: {kwargs}}` (existing behavior)
-  - As ready-made instances: `{"stripe": StripeProvider(...), "custom": MyProvider(...)}`
-  - As a list of instances: `[WalleotProvider(...), MyProvider(...)]`
-- Support for custom provider classes via `register_provider()` function
-- Class path configuration for providers using `"class"` key in config
-- Mixed configuration styles support (combine different methods in same setup)
+**Latest Features:**
+- Extensible provider system with multiple configuration styles
+- Custom provider support via `BasePaymentProvider`
+- Provider registration with `register_provider()`
 
 ## Next Steps
 

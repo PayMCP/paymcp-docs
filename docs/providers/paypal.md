@@ -26,80 +26,78 @@ PayPal enables payments from PayPal balance, credit cards, and bank transfers. W
 3. Note your **Client ID** and **Client Secret**
 4. Configure return URLs for your domain
 
-### 2. Configuration Options
+### 2. Configuration
 
-PayMCP supports multiple ways to configure the PayPal provider:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-#### Option 1: Config Mapping (Default)
-
-```python
-from paymcp import PayMCP, PaymentFlow
-
-PayMCP(
-    mcp,
-    providers={
-        "paypal": {
-            "client_id": "YOUR_CLIENT_ID",
-            "client_secret": "YOUR_CLIENT_SECRET",
-            "sandbox": True,  # Use False for production
-            "success_url": "https://yourapp.com/success",
-            "cancel_url": "https://yourapp.com/cancel"
-        }
-    },
-    payment_flow=PaymentFlow.TWO_STEP  # Recommended for PayPal
-)
-```
-
-#### Option 2: Provider Instance
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-from paymcp import PayMCP, PaymentFlow
 from paymcp.providers import PayPalProvider
 
-paypal_provider = PayPalProvider(
-    client_id="YOUR_CLIENT_ID",
-    client_secret="YOUR_CLIENT_SECRET",
-    sandbox=True,
-    success_url="https://yourapp.com/success",
-    cancel_url="https://yourapp.com/cancel"
-)
-
-PayMCP(
-    mcp,
-    providers={"paypal": paypal_provider},
-    payment_flow=PaymentFlow.TWO_STEP
-)
+PayMCP(mcp, providers=[
+    PayPalProvider(
+        client_id="YOUR_CLIENT_ID",
+        client_secret="YOUR_CLIENT_SECRET",
+        sandbox=True
+    )
+])
 ```
 
-#### Option 3: List of Instances
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-```python
-from paymcp import PayMCP, PaymentFlow
-from paymcp.providers import PayPalProvider
+```typescript
+import { PayPalProvider } from 'paymcp/providers';
 
-PayMCP(
-    mcp,
-    providers=[
-        PayPalProvider(
-            client_id="YOUR_CLIENT_ID",
-            client_secret="YOUR_CLIENT_SECRET",
-            sandbox=True,
-            success_url="https://yourapp.com/success",
-            cancel_url="https://yourapp.com/cancel"
-        )
-    ],
-    payment_flow=PaymentFlow.TWO_STEP
-)
+new PayMCP(mcp, { 
+    providers: [
+        new PayPalProvider({
+            client_id: "YOUR_CLIENT_ID",
+            client_secret: "YOUR_CLIENT_SECRET",
+            sandbox: true
+        })
+    ] 
+});
 ```
+
+</TabItem>
+</Tabs>
 
 ### 3. Test Your Integration
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
 @price(amount=1.00, currency="USD")
-def paypal_test(message: str, ctx: Context) -> str:
+def test_paypal_payment(message: str, ctx: Context) -> str:
+    """Test PayPal payment integration"""
     return f"PayPal payment successful! Message: {message}"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "test_paypal_payment",
+  {
+    description: "Test PayPal payment integration",
+    inputSchema: { message: z.string() },
+    price: { amount: 1.00, currency: "USD" },
+  },
+  async ({ message }, ctx) => {
+    return { content: [{ type: "text", text: `PayPal payment successful! Message: ${message}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 ## Configuration Options
 
@@ -129,20 +127,6 @@ providers = {
 }
 ```
 
-## Supported Currencies
-
-PayPal supports 25+ currencies including:
-
-```python
-@price(amount=1.00, currency="USD")   # US Dollars
-@price(amount=1.50, currency="EUR")   # Euros  
-@price(amount=5.00, currency="GBP")   # British Pounds
-@price(amount=10.00, currency="CAD")  # Canadian Dollars
-@price(amount=100, currency="JPY")    # Japanese Yen
-@price(amount=50.00, currency="AUD")  # Australian Dollars
-```
-
-See [PayPal's currency support](https://developer.paypal.com/docs/reports/reference/paypal-supported-currencies/) for the complete list.
 
 
 **User Experience:**
@@ -225,15 +209,6 @@ PayMCP automatically handles common PayPal errors:
 # - Clear messaging to user about cancellation
 ```
 
-### API Errors
-
-```python
-# PayMCP handles PayPal API errors:
-# - Invalid credentials
-# - Rate limiting
-# - Service downtime
-# - Network timeouts
-```
 
 ## Best Practices
 
@@ -243,11 +218,8 @@ PayMCP automatically handles common PayPal errors:
 # Clear PayPal messaging
 @mcp.tool()
 @price(amount=1.99, currency="USD")
-def paypal_tool(input: str, ctx: Context) -> str:
-    """
-    Premium analysis - $1.99
-    Pay securely with PayPal, credit card, or bank transfer
-    """
+def analyze_premium_content(input: str, ctx: Context) -> str:
+    """Analyze content using premium AI features"""
     return analyze_premium(input)
 ```
 
@@ -280,7 +252,6 @@ Before going live with PayPal:
 - [ ] Switch to production credentials (`sandbox: False`)
 - [ ] Update success/cancel URLs to production domains
 - [ ] Test with small real amounts
-- [ ] Configure webhook endpoints (optional)
 - [ ] Verify account verification status
 - [ ] Review PayPal's acceptable use policy
 
@@ -307,22 +278,6 @@ Before going live with PayPal:
 
 ## Troubleshooting
 
-### Common Issues
-
-**"Access denied" errors:**
-- Verify client ID and secret are correct
-- Check app permissions in PayPal Developer Console
-- Ensure app is configured for payments
-
-**Payments not completing:**
-- Verify success_url is accessible
-- Check for PayPal account limitations
-- Ensure proper webhook configuration
-
-**Currency errors:**
-- Check if currency is supported in your region
-- Verify account currency settings
-- Some currencies require business verification
 
 ### Debug Mode
 

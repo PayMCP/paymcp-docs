@@ -30,8 +30,6 @@ Sends the user a payment link when the tool is invoked. If the client supports i
 **PaymentFlow.PROGRESS**  
 Shows payment link and a progress indicator while the system waits for payment confirmation in the background. The result is returned automatically once payment is completed.
 
-**PaymentFlow.OOB** (Out-of-Band)  
-Not yet implemented.
 
 All flows require the MCP client to support the corresponding interaction pattern. When in doubt, start with TWO_STEP.
 
@@ -98,13 +96,36 @@ PayMCP(mcp, providers=[MyProvider(api_key="...")])
 
 Use the `@price` decorator on any tool:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 @mcp.tool()
 @price(amount=0.19, currency="USD")
-def add(a: int, b: int, ctx: Context) -> int:
-    # `ctx` is required by the PayMCP tool signature — include it even if unused
+def add_numbers(a: int, b: int, ctx: Context) -> int:
+    """Add two numbers together"""
     return a + b
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "add_numbers",
+  {
+    description: "Add two numbers together",
+    inputSchema: { a: z.number(), b: z.number() },
+    price: { amount: 0.19, currency: "USD" },
+  },
+  async ({ a, b }, ctx) => {
+    return { content: [{ type: "text", text: String(a + b) }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 **Demo server:** For a complete setup, see the example repo: [python-paymcp-server-demo](https://github.com/PayMCP/python-paymcp-server-demo).
 

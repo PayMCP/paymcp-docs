@@ -26,77 +26,78 @@ Square provides payment processing with support for credit cards, digital wallet
 3. Create a new application
 4. Copy your **Access Token** and **Location ID**
 
-### 2. Configuration Options
+### 2. Configuration
 
-PayMCP supports multiple ways to configure the Square provider:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-#### Option 1: Config Mapping (Default)
-
-```python
-from paymcp import PayMCP, PaymentFlow
-
-PayMCP(
-    mcp,
-    providers={
-        "square": {
-            "access_token": "YOUR_ACCESS_TOKEN",
-            "location_id": "YOUR_LOCATION_ID", 
-            "sandbox": True,  # Use False for production
-            "redirect_url": "https://yourapp.com/success"
-        }
-    },
-    payment_flow=PaymentFlow.TWO_STEP
-)
-```
-
-#### Option 2: Provider Instance
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-from paymcp import PayMCP, PaymentFlow
 from paymcp.providers import SquareProvider
 
-square_provider = SquareProvider(
-    access_token="YOUR_ACCESS_TOKEN",
-    location_id="YOUR_LOCATION_ID",
-    sandbox=True,
-    redirect_url="https://yourapp.com/success"
-)
-
-PayMCP(
-    mcp,
-    providers={"square": square_provider},
-    payment_flow=PaymentFlow.TWO_STEP
-)
+PayMCP(mcp, providers=[
+    SquareProvider(
+        access_token="YOUR_ACCESS_TOKEN",
+        location_id="YOUR_LOCATION_ID",
+        sandbox=True
+    )
+])
 ```
 
-#### Option 3: List of Instances
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-```python
-from paymcp import PayMCP, PaymentFlow
-from paymcp.providers import SquareProvider
+```typescript
+import { SquareProvider } from 'paymcp/providers';
 
-PayMCP(
-    mcp,
-    providers=[
-        SquareProvider(
-            access_token="YOUR_ACCESS_TOKEN",
-            location_id="YOUR_LOCATION_ID",
-            sandbox=True,
-            redirect_url="https://yourapp.com/success"
-        )
-    ],
-    payment_flow=PaymentFlow.TWO_STEP
-)
+new PayMCP(mcp, { 
+    providers: [
+        new SquareProvider({
+            access_token: "YOUR_ACCESS_TOKEN",
+            location_id: "YOUR_LOCATION_ID",
+            sandbox: true
+        })
+    ] 
+});
 ```
+
+</TabItem>
+</Tabs>
 
 ### 3. Test Your Integration
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
 @price(amount=1.50, currency="USD")
-def square_test(item: str, ctx: Context) -> str:
+def test_square_payment(item: str, ctx: Context) -> str:
+    """Test Square payment integration"""
     return f"Square payment successful for: {item}"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "test_square_payment",
+  {
+    description: "Test Square payment integration",
+    inputSchema: { item: z.string() },
+    price: { amount: 1.50, currency: "USD" },
+  },
+  async ({ item }, ctx) => {
+    return { content: [{ type: "text", text: `Square payment successful for: ${item}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 ## Configuration Options
 
@@ -112,17 +113,6 @@ providers = {
 }
 ```
 
-## Supported Currencies
-
-Square supports major currencies:
-
-```python
-@price(amount=1.00, currency="USD")   # US Dollars
-@price(amount=1.50, currency="CAD")   # Canadian Dollars  
-@price(amount=5.00, currency="GBP")   # British Pounds
-@price(amount=10.00, currency="AUD")  # Australian Dollars
-@price(amount=100, currency="JPY")    # Japanese Yen
-```
 
 ## Testing
 

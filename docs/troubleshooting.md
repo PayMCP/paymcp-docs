@@ -23,21 +23,49 @@ Common issues, solutions, and frequently asked questions about PayMCP.
 
 **Error**: `Tool 'my_tool' not found` or similar MCP errors
 
-**Solution**: Ensure the `ctx: Context` parameter is included:
+**Solution**: Include `ctx: Context` parameter:
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-# ❌ Wrong - missing ctx parameter
-@mcp.tool()
+# ❌ Wrong
 @price(amount=0.50, currency="USD")
-def my_tool(input: str) -> str:
+def process_user_input(input: str) -> str:
     return "result"
 
-# ✅ Correct - includes ctx parameter
-@mcp.tool()
+# ✅ Correct
 @price(amount=0.50, currency="USD")
-def my_tool(input: str, ctx: Context) -> str:
+def process_user_input(input: str, ctx: Context) -> str:
+    """Process user input and return result"""
     return "result"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// ❌ Wrong
+server.registerTool("process_user_input", {
+  price: { amount: 0.50, currency: "USD" }
+}, async ({ input }) => {
+  return { content: [{ type: "text", text: "result" }] };
+});
+
+// ✅ Correct
+server.registerTool("process_user_input", {
+  description: "Process user input and return result",
+  price: { amount: 0.50, currency: "USD" }
+}, async ({ input }, ctx) => {
+  return { content: [{ type: "text", text: "result" }] };
+});
+```
+
+</TabItem>
+</Tabs>
 
 ### Provider Authentication Error
 
@@ -105,21 +133,21 @@ print(f"PayMCP: {paymcp.__version__}")
 print(f"MCP: {mcp.__version__}")
 ```
 
-### Provider Import Errors (0.2.0+)
+### Provider Import Errors
 
 **Error**: `ImportError: cannot import name 'StripeProvider' from 'paymcp.providers'`
 
-**Solution**: Ensure you're using PayMCP 0.2.0+ for provider instances:
+**Solution**: Ensure you're using the latest PayMCP version for provider instances:
 ```python
 # Check version first
 import paymcp
-print(f"PayMCP version: {paymcp.__version__}")  # Should be 0.2.0+
+print(f"PayMCP version: {paymcp.__version__}")
 
 # Then import provider classes
 from paymcp.providers import StripeProvider, WalleotProvider
 ```
 
-### Provider Configuration Type Errors (0.2.0+)
+### Provider Configuration Type Errors
 
 **Error**: `TypeError: Provider must be an instance of BasePaymentProvider`
 
@@ -183,18 +211,6 @@ ngrok http 3000
 # Use ngrok URL in provider configuration
 ```
 
-#### Webhook Testing
-
-**Issue**: Can't receive webhooks locally
-
-**Solution**: Use webhook testing tools:
-```bash
-# Use ngrok for webhook testing
-ngrok http 3000
-
-# Configure webhook URL in provider dashboard:
-# https://abc123.ngrok.io/webhook
-```
 
 ### Environment Setup
 
@@ -215,29 +231,17 @@ from dotenv import load_dotenv
 load_dotenv()
 ```
 
-## Configuration Issues (0.2.0+)
+## Configuration Issues
 
-### Mixed Configuration Problems
+### Configuration Problems
 
 **Error**: `TypeError: build_providers expects a mapping or an iterable of provider instances`
 
-**Solution**: Don't mix configuration styles incorrectly:
+**Solution**: Use the canonical provider list format:
 ```python
-# ❌ Wrong - mixing incorrectly
-PayMCP(mcp, providers="stripe")  # Invalid type
-
-# ✅ Correct - valid configuration methods
-# Config mapping
-PayMCP(mcp, providers={"stripe": {"apiKey": "sk_test_..."}})
-
-# Provider instances
+# ✅ Correct
+from paymcp.providers import StripeProvider
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
-
-# Mixed mapping
-PayMCP(mcp, providers={
-    "stripe": {"apiKey": "sk_test_..."},  # Config dict
-    "walleot": WalleotProvider(api_key="wk_test_...")  # Instance
-})
 ```
 
 ### Class Path Configuration Errors
@@ -281,16 +285,13 @@ register_provider("my-gateway", MyProvider)
 
 ## Frequently Asked Questions
 
-### General (Updated for 0.2.0)
+### General
 
 **Q: Can I use multiple payment providers simultaneously?**
-A: Yes! 0.2.0 supports multiple configuration methods. PayMCP currently uses the first configured provider. Provider selection and failover is planned for future releases.
+A: Yes! PayMCP supports multiple configuration methods. PayMCP currently uses the first configured provider.
 
-**Q: What's the difference between configuration methods in 0.2.0?**
-A: Three methods are available:
-- **Config mapping** `{name: {kwargs}}` - Traditional, environment-friendly
-- **Provider instances** `{name: Provider(...)}` - Type-safe, IDE-friendly  
-- **List of instances** `[Provider(...)]` - Simple, auto-named
+**Q: How do I configure providers?**
+A: Use the canonical format: `providers=[StripeProvider(apiKey="...")]`
 
 **Q: Can I use PayMCP with STDIO mode (local MCP servers)?**
 A: **NO - This is a critical security vulnerability.** STDIO mode would expose your payment provider API keys to end users. PayMCP requires hosted deployment where you control the server environment and API keys remain secure.

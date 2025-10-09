@@ -17,7 +17,8 @@ PayMCP provides an extensible provider system that abstracts payment providers b
 ```python
 # Same tool works with any provider configuration style
 @price(amount=1.00, currency="USD")
-def my_tool(input: str, ctx: Context) -> str:
+def process_data(input: str, ctx: Context) -> str:
+    """Process input data"""
     return "Tool executed successfully"
 ```
 
@@ -104,8 +105,7 @@ The `@price` decorator adds payment requirements to your MCP tools without chang
 # Regular MCP tool
 @mcp.tool()
 def analyze_text(text: str, ctx: Context) -> dict:
-    """Tool description"""
-    #Your code goes here
+    """Analyze text content and return insights"""
     return {"analysis": "detailed results"}
 
 # Same tool with payment requirement
@@ -123,14 +123,47 @@ The `payment_flow` parameter determines how users interact with your paid tools.
 
 The default flow splits your tool into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don’t need to change your function code — just write your tool as usual, and PayMCP will automatically create both tools.
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.TWO_STEP)
+from paymcp.providers import StripeProvider
+
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def generate_report(data: str, ctx: Context) -> str:
+def generate_data_report(data: str, ctx: Context) -> str:
+    """Generate a data report from input data"""
     return f"Report generated for: {data}"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { StripeProvider } from 'paymcp/providers';
+
+new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+
+server.registerTool(
+  "generate_data_report",
+  {
+    description: "Generate a data report from input data",
+    inputSchema: { data: z.string() },
+    price: { amount: 0.50, currency: "USD" },
+  },
+  async ({ data }, ctx) => {
+    return { content: [{ type: "text", text: `Report generated for: ${data}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 Under the hood, PayMCP will replace your `generate_report` tool so that it first returns a payment link, and will automatically add an additional tool `confirm_generate_report_payment` that actually runs your original code after the payment is completed.
 
@@ -163,9 +196,8 @@ PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.ELICITATION)
 
 @mcp.tool()
 @price(amount=0.25, currency="USD")
-def quick_analysis(text: str, ctx: Context) -> str:
-    """Tool description"""
-    # Your code goes here
+def analyze_text_quickly(text: str, ctx: Context) -> str:
+    """Analyze text content quickly"""
     return f"Analysis: {text} processed successfully"
 ```
 
@@ -194,8 +226,7 @@ PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.PROGRESS)
 @mcp.tool()
 @price(amount=2.00, currency="USD")
 def process_large_dataset(dataset_url: str, ctx: Context) -> dict:
-    """Tool description"""
-    # Your code goes here
+    """Process a large dataset from URL"""
     return {"processing": "completed", "results": "..."}
 ```
 
@@ -219,15 +250,12 @@ MCP server: Executes process_large_dataset() → Returns results
 - ❌ Timeout duration depends on the client
 - ❌ Requires progress reporting support that can display progress messages (not just percentages)
 
-### OOB Flow (Coming Soon)
-
-Similar to ELICITATION flow, but payment links are handled as actual clickable links rather than text to display to the user.
 
 ## Advanced Configuration
 
-### Custom Return URLs
+### Return URLs
 
-Some providers support custom return URLs after payment (success_url/cancel_url for Stripe, return_url for Adyen, etc.). These will be handled at the PayMCP level in future versions.
+Some providers support custom return URLs after payment. Provider parameter names differ (success_url/cancel_url for Stripe, return_url for Adyen, etc.). These will be handled at the PayMCP level in future versions.
 
 ### Secure Deployment
 

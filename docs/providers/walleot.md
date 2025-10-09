@@ -1,20 +1,20 @@
 ---
 id: walleot
 title: "Walleot Provider"
-description: Accept cryptocurrency payments with instant settlement using Walleot
+description: Accept payments with pre-purchased credits and auto payments using Walleot
 ---
 
 # Walleot Provider
 
-Walleot enables instant cryptocurrency payments with automatic conversion to stablecoins or fiat. Perfect for global, permissionless payments with instant settlement.
+Walleot enables seamless payments with pre-purchased credits and automatic payment processing.
 
 ## Features
 
+- **Pre-purchased Credits** - Users buy credits in advance for frictionless payments
+- **Auto Payments** - Automatic payment processing for approved amounts
 - **Instant Settlement** - Receive payments in seconds, not days
 - **Global Access** - No geographic restrictions or bank requirements
-- **Low Fees** - Minimal transaction costs compared to traditional payments
-- **Cryptocurrency Support** - Bitcoin, Ethereum, USDC, and more
-- **Auto-Conversion** - Automatically convert to your preferred currency
+- **Low Fees** - Minimal transaction costs
 - **Developer-Friendly** - Simple API with comprehensive testing tools
 
 ## Quick Setup
@@ -26,118 +26,111 @@ Walleot enables instant cryptocurrency payments with automatic conversion to sta
 3. Navigate to **Developers** → **API Keys**
 4. Copy your **API Key** (starts with `wk_test_` for testing)
 
-### 2. Configuration Options
+### 2. Configuration
 
-PayMCP supports multiple ways to configure the Walleot provider:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-#### Option 1: Config Mapping (Default)
-
-```python
-from paymcp import PayMCP, PaymentFlow
-
-PayMCP(
-    mcp,
-    providers={
-        "walleot": {
-            "apiKey": "wk_test_...",  # Your Walleot API key
-        }
-    },
-    payment_flow=PaymentFlow.ELICITATION  # Recommended for crypto
-)
-```
-
-#### Option 2: Provider Instance
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-from paymcp import PayMCP, PaymentFlow
 from paymcp.providers import WalleotProvider
 
-walleot_provider = WalleotProvider(
-    api_key="wk_test_..."
-)
-
-PayMCP(
-    mcp,
-    providers={"walleot": walleot_provider},
-    payment_flow=PaymentFlow.ELICITATION
-)
+PayMCP(mcp, providers=[WalleotProvider(api_key="wk_test_...")])
 ```
 
-#### Option 3: List of Instances
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-```python
-from paymcp import PayMCP, PaymentFlow
-from paymcp.providers import WalleotProvider
+```typescript
+import { WalleotProvider } from 'paymcp/providers';
 
-PayMCP(
-    mcp,
-    providers=[
-        WalleotProvider(api_key="wk_test_...")
-    ],
-    payment_flow=PaymentFlow.ELICITATION
-)
+new PayMCP(mcp, { providers: [new WalleotProvider({ api_key: "wk_test_..." })] });
 ```
+
+</TabItem>
+</Tabs>
 
 ### 3. Test Your Integration
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 @mcp.tool()
 @price(amount=0.50, currency="USD")
-def crypto_payment_test(message: str, ctx: Context) -> str:
-    return f"Crypto payment successful! Message: {message}"
+def test_walleot_payment(message: str, ctx: Context) -> str:
+    """Test Walleot payment integration"""
+    return f"Walleot payment successful! Message: {message}"
 ```
 
-Test with small amounts on testnet first.
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-## Supported Currencies
-
-### Fiat Currencies
-- **USD** - US Dollars (recommended)
-- **EUR** - Euros
-- **GBP** - British Pounds
-
-### Cryptocurrencies
-- **BTC** - Bitcoin
-- **ETH** - Ethereum
-- **USDC** - USD Coin (stablecoin)
-- **USDT** - Tether (stablecoin)
-
-```python
-# Fiat pricing (recommended)
-@price(amount=1.00, currency="USD")
-def fiat_priced_tool(input: str, ctx: Context) -> str:
-    return "Tool executed"
-
-# Crypto pricing
-@price(amount=0.001, currency="BTC")
-def btc_priced_tool(input: str, ctx: Context) -> str:
-    return "Tool executed"
-
-# Stablecoin pricing
-@price(amount=1.00, currency="USDC")
-def stablecoin_tool(input: str, ctx: Context) -> str:
-    return "Tool executed"
+```typescript
+server.registerTool(
+  "test_walleot_payment",
+  {
+    description: "Test Walleot payment integration",
+    inputSchema: { message: z.string() },
+    price: { amount: 0.50, currency: "USD" },
+  },
+  async ({ message }, ctx) => {
+    return { content: [{ type: "text", text: `Walleot payment successful! Message: ${message}` }] };
+  }
+);
 ```
+
+</TabItem>
+</Tabs>
+
+Test with small amounts first.
+
 
 ## Payment Flows
 
 ### Recommended: ELICITATION Flow
 
-Best for crypto payments due to real-time nature:
+Best for Walleot due to instant credit processing:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
-PayMCP(
-    mcp,
-    providers={"walleot": {"apiKey": "wk_test_..."}},
-    payment_flow=PaymentFlow.ELICITATION
-)
+PayMCP(mcp, providers=[WalleotProvider(api_key="wk_test_...")], payment_flow=PaymentFlow.ELICITATION)
 
 @mcp.tool()
 @price(amount=0.25, currency="USD")
-def instant_crypto_tool(data: str, ctx: Context) -> str:
-    # Payment happens instantly, tool executes immediately after
+def process_data_instantly(data: str, ctx: Context) -> str:
+    """Process data with instant Walleot payment"""
     return f"Processed: {data}"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+new PayMCP(mcp, { 
+    providers: [new WalleotProvider({ api_key: "wk_test_..." })],
+    payment_flow: PaymentFlow.ELICITATION 
+});
+
+server.registerTool(
+  "process_data_instantly",
+  {
+    description: "Process data with instant Walleot payment",
+    inputSchema: { data: z.string() },
+    price: { amount: 0.25, currency: "USD" },
+  },
+  async ({ data }, ctx) => {
+    return { content: [{ type: "text", text: `Processed: ${data}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 ### Alternative: TWO_STEP Flow
 
@@ -161,17 +154,12 @@ Configure automatic conversion:
 
 ```python
 # Walleot handles conversion automatically based on your account settings
-# Set your preferred settlement currency in your Walleot dashboard:
-# USD, EUR, GBP, or keep as crypto (BTC, ETH, USDC)
+# Set your preferred settlement currency in your Walleot dashboard
 ```
 
-### Network Preferences
+### Payment Processing
 
-Walleot automatically selects the best network for cost and speed:
-
-- **Bitcoin**: Lightning Network for small amounts, on-chain for larger
-- **Ethereum**: Optimistic rollups for lower fees
-- **Stablecoins**: Polygon or Arbitrum for minimal fees
+Walleot automatically handles payment processing for optimal speed and cost.
 
 ## Testing
 
@@ -213,27 +201,12 @@ def onchain_test(ctx: Context) -> str:
     return "On-chain payment successful"
 ```
 
-### Test Wallets
+### Test Environment
 
-Use these test wallets to simulate payments:
-- **Web**: Walleot provides test wallet interface
-- **Mobile**: Testnet versions of popular wallets
-- **Lightning**: Testnet Lightning wallets
+Use Walleot's test environment to simulate payments with test credits.
 
 ## Error Handling
 
-### Common Errors
-
-```python
-# Network congestion
-# Walleot automatically retries and uses alternative networks
-
-# Insufficient funds
-# Clear error messages to user with exact amounts needed
-
-# Invalid currency
-# Check supported currencies in your account dashboard
-```
 
 ### Timeout Handling
 
@@ -243,9 +216,8 @@ Use these test wallets to simulate payments:
 
 @mcp.tool()
 @price(amount=1.00, currency="USD")
-def patient_tool(data: str, ctx: Context) -> str:
-    # Walleot waits for network confirmation
-    # User sees real-time payment status
+def process_with_confirmation(data: str, ctx: Context) -> str:
+    """Process data with payment confirmation"""
     return f"Confirmed payment for: {data}"
 ```
 
@@ -270,15 +242,11 @@ def premium_analysis(data: str, ctx: Context) -> dict:
 ### User Experience
 
 ```python
-# Clear crypto payment messaging
+# Clear Walleot payment messaging
 @mcp.tool()
 @price(amount=0.25, currency="USD")
-def crypto_tool(input: str, ctx: Context) -> str:
-    """
-    AI analysis tool - $0.25
-    Accepts: Bitcoin, Ethereum, USDC, USDT
-    Settlement: Instant via Lightning/L2
-    """
+def analyze_with_walleot(input: str, ctx: Context) -> str:
+    """Analyze input using AI with Walleot payment"""
     return analyze(input)
 ```
 
@@ -364,22 +332,6 @@ PayMCP(mcp, providers={
 
 ## Troubleshooting
 
-### Common Issues
-
-**Payment not confirming:**
-- Check network status (Bitcoin/Ethereum congestion)
-- Verify sufficient gas/fees for transaction
-- Wait for network confirmations (varies by currency)
-
-**API key errors:**
-- Ensure API key is active and not expired
-- Check API key permissions in dashboard
-- Verify account KYC status
-
-**Currency not supported:**
-- Check available currencies in account dashboard
-- Some currencies require account verification
-- Regional restrictions may apply
 
 ### Debug Mode
 
