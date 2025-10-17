@@ -45,7 +45,7 @@ import { PayMCP, price } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
 const mcp = new FastMCP("AI Image Generator");
-new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -192,7 +192,7 @@ async def generate_premium_ai_image(
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "generate_premium_ai_image",
   {
     description: "Generate a high-quality AI image with custom art style",

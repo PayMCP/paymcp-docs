@@ -51,9 +51,9 @@ PayMCP(mcp, providers=[
 ```typescript
 import { AdyenProvider } from 'paymcp/providers';
 
-new PayMCP(mcp, { 
+installPayMCP(mcp, { 
     providers: [
-        new AdyenProvider({
+        AdyenProvider({
             api_key: "YOUR_API_KEY",
             merchant_account: "YOUR_MERCHANT_ACCOUNT",
             sandbox: true
@@ -82,7 +82,7 @@ def test_adyen_payment(product: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "test_adyen_payment",
   {
     description: "Test Adyen payment integration",
@@ -105,7 +105,6 @@ providers = {
     "adyen": {
         "api_key": "YOUR_API_KEY",                    # Required
         "merchant_account": "YOUR_MERCHANT_ACCOUNT",  # Required  
-        "return_url": "https://yourapp.com/return",   # Required
         "sandbox": True,                              # True for test environment
     }
 }
@@ -124,7 +123,6 @@ providers = {
     "adyen": {
         "api_key": "YOUR_TEST_API_KEY",
         "merchant_account": "YOUR_TEST_MERCHANT_ACCOUNT",
-        "return_url": "http://localhost:3000/return",
         "sandbox": True
     }
 }
@@ -135,7 +133,6 @@ providers = [
     AdyenProvider(
         api_key="YOUR_TEST_API_KEY",
         merchant_account="YOUR_TEST_MERCHANT_ACCOUNT",
-        return_url="http://localhost:3000/return",
         sandbox=True
     )
 ]
@@ -148,26 +145,6 @@ providers = [
 | `4111 1111 1111 1111` | Visa - Authorized |
 | `4000 0000 0000 0002` | Visa - Declined |
 | `5555 5555 5555 4444` | Mastercard - Authorized |
-
-## Payment Flow
-
-Adyen uses Pay-by-Link for MCP integration:
-
-```python
-PayMCP(mcp, providers={"adyen": {...}}, payment_flow=PaymentFlow.TWO_STEP)
-
-@mcp.tool()
-@price(amount=10.00, currency="USD")
-def process_global_data(data: str, ctx: Context) -> str:
-    """Process data using global service"""
-    return f"Global service completed for: {data}"
-```
-
-**User Experience:**
-1. User calls tool → Gets Adyen payment link
-2. User chooses payment method → Completes payment
-3. User returns to app → Calls confirmation tool
-4. Tool executes after payment verification
 
 ## Support
 

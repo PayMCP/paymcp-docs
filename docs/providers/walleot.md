@@ -24,7 +24,7 @@ Walleot enables seamless payments with pre-purchased credits and automatic payme
 1. Sign up at [walleot.com](https://walleot.com)
 2. Complete KYC verification (required for settlement)
 3. Navigate to **Developers** → **API Keys**
-4. Copy your **API Key** (starts with `wk_test_` for testing)
+4. Copy your **API Key** (starts with `sk_test_` for testing)
 
 ### 2. Configuration
 
@@ -37,7 +37,7 @@ import TabItem from '@theme/TabItem';
 ```python
 from paymcp.providers import WalleotProvider
 
-PayMCP(mcp, providers=[WalleotProvider(api_key="wk_test_...")])
+PayMCP(mcp, providers=[WalleotProvider(api_key="sk_test_...")])
 ```
 
 </TabItem>
@@ -46,7 +46,7 @@ PayMCP(mcp, providers=[WalleotProvider(api_key="wk_test_...")])
 ```typescript
 import { WalleotProvider } from 'paymcp/providers';
 
-new PayMCP(mcp, { providers: [new WalleotProvider({ api_key: "wk_test_..." })] });
+installPayMCP(mcp, { providers: [WalleotProvider({ api_key: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -69,7 +69,7 @@ def test_walleot_payment(message: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "test_walleot_payment",
   {
     description: "Test Walleot payment integration",
@@ -86,80 +86,6 @@ server.registerTool(
 </Tabs>
 
 Test with small amounts first.
-
-
-## Payment Flows
-
-### Recommended: ELICITATION Flow
-
-Best for Walleot due to instant credit processing:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-PayMCP(mcp, providers=[WalleotProvider(api_key="wk_test_...")], payment_flow=PaymentFlow.ELICITATION)
-
-@mcp.tool()
-@price(amount=0.25, currency="USD")
-def process_data_instantly(data: str, ctx: Context) -> str:
-    """Process data with instant Walleot payment"""
-    return f"Processed: {data}"
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-new PayMCP(mcp, { 
-    providers: [new WalleotProvider({ api_key: "wk_test_..." })],
-    payment_flow: PaymentFlow.ELICITATION 
-});
-
-server.registerTool(
-  "process_data_instantly",
-  {
-    description: "Process data with instant Walleot payment",
-    inputSchema: { data: z.string() },
-    price: { amount: 0.25, currency: "USD" },
-  },
-  async ({ data }, ctx) => {
-    return { content: [{ type: "text", text: `Processed: ${data}` }] };
-  }
-);
-```
-
-</TabItem>
-</Tabs>
-
-### Alternative: TWO_STEP Flow
-
-For compatibility with all MCP clients:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-PayMCP(mcp, providers=[WalleotProvider(api_key="wk_test_...")], payment_flow=PaymentFlow.TWO_STEP)
-
-# User gets payment link, pays, then calls confirmation
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-new PayMCP(mcp, { 
-    providers: [new WalleotProvider({ api_key: "wk_test_..." })],
-    payment_flow: PaymentFlow.TWO_STEP 
-});
-
-// User gets payment link, pays, then calls confirmation
-```
-
-</TabItem>
-</Tabs>
-
 
 ## Support
 

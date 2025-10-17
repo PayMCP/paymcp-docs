@@ -46,7 +46,7 @@ PayMCP(mcp, providers=[CoinbaseProvider(api_key="YOUR_API_KEY")])
 ```typescript
 import { CoinbaseProvider } from 'paymcp/providers';
 
-new PayMCP(mcp, { providers: [new CoinbaseProvider({ api_key: "YOUR_API_KEY" })] });
+installPayMCP(mcp, { providers: [CoinbaseProvider({ api_key: "YOUR_API_KEY" })] });
 ```
 
 </TabItem>
@@ -69,7 +69,7 @@ def test_crypto_payment(item: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "test_crypto_payment",
   {
     description: "Test cryptocurrency payment",
@@ -98,56 +98,6 @@ providers = {
 }
 ```
 
-
-## Payment Flow
-
-### PROGRESS Flow (Recommended)
-
-Best for crypto due to network confirmation times:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-PayMCP(mcp, providers=[CoinbaseProvider(api_key="...")], payment_flow=PaymentFlow.PROGRESS)
-
-@mcp.tool()
-@price(amount=2.50, currency="USD")
-def process_data_with_crypto(data: str, ctx: Context) -> str:
-    """Process data using cryptocurrency payment"""
-    return f"Crypto service completed for: {data}"
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-new PayMCP(mcp, { 
-    providers: [new CoinbaseProvider({ api_key: "..." })],
-    payment_flow: PaymentFlow.PROGRESS 
-});
-
-server.registerTool(
-  "process_data_with_crypto",
-  {
-    description: "Process data using cryptocurrency payment",
-    inputSchema: { data: z.string() },
-    price: { amount: 2.50, currency: "USD" },
-  },
-  async ({ data }, ctx) => {
-    return { content: [{ type: "text", text: `Crypto service completed for: ${data}` }] };
-  }
-);
-```
-
-</TabItem>
-</Tabs>
-
-**User Experience:**
-1. User calls tool → Gets crypto payment page
-2. User selects cryptocurrency → Sends payment
-3. System shows "Waiting for confirmation..." with progress
-4. Tool executes automatically after network confirmation
 
 ## Testing
 

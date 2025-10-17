@@ -52,14 +52,14 @@ PayMCP(mcp, providers=[
 ```typescript
 import { PayPalProvider } from 'paymcp/providers';
 
-new PayMCP(mcp, { 
+installPayMCP(mcp, { 
     providers: [
-        new PayPalProvider({
+        PayPalProvider({
             client_id: "YOUR_CLIENT_ID",
             client_secret: "YOUR_CLIENT_SECRET",
             sandbox: true
         })
-    ] 
+    ]
 });
 ```
 
@@ -83,7 +83,7 @@ def test_paypal_payment(message: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "test_paypal_payment",
   {
     description: "Test PayPal payment integration",

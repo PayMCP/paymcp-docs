@@ -4,21 +4,37 @@ title: Quickstart
 description: Get started with PayMCP in minutes - install, configure, and monetize your first MCP tool
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Quickstart
 
 Get PayMCP up and running in your MCP server in just a few minutes.
 
 ## Installation
 
-Install PayMCP from PyPI using pip:
+Install PayMCP:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```bash
 pip install paymcp
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```bash
+npm install paymcp
+```
+
+</TabItem>
+</Tabs>
+
 ### Requirements
 
-- Python 3.8+
+- Python 3.8+ or Node.js 16+
 - An MCP server framework (FastMCP recommended)  
 - **Hosted server environment** (NOT STDIO mode)
 - API keys from your chosen payment provider (kept secure on your server)
@@ -33,7 +49,7 @@ PayMCP contains sensitive payment provider API keys that must never be exposed t
 # These are SECRET and must stay on YOUR server
 providers = [
     StripeProvider(apiKey="sk_live_..."),  # NEVER expose this
-    WalleotProvider(api_key="wk_live_...")  # NEVER expose this
+    WalleotProvider(api_key="sk_live_...")  # NEVER expose this
 ]
 ```
 
@@ -57,9 +73,6 @@ PayMCP(mcp, providers=[
 ## Basic Setup
 
 ### 1. Initialize Your MCP Server
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -100,7 +113,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+installinstallPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -124,7 +137,7 @@ def generate_ai_image(prompt: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "generate_ai_image",
   {
     description: "Generate an AI image from a text prompt",
@@ -163,7 +176,7 @@ def analyze_document(document: str, ctx: Context) -> dict:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "check_text_grammar",
   {
     description: "Check and correct grammar in text",
@@ -175,7 +188,7 @@ server.registerTool(
   }
 );
 
-server.registerTool(
+mcp.tool(
   "analyze_document",
   {
     description: "Perform detailed document analysis",
@@ -199,7 +212,7 @@ Choose the payment flow that works best for your use case:
 
 ### TWO_STEP (Default - Most Compatible)
 
-Best for most applications. Splits payment into two steps:
+Best for most applications. Splits tool execution into two steps:
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -217,9 +230,9 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-new PayMCP(mcp, { 
-    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    payment_flow: PaymentFlow.TWO_STEP 
+installPayMCP(mcp, { 
+    providers: [StripeProvider({ apiKey: "sk_test_..." })],
+    payment_flow: PaymentFlow.TWO_STEP
 });
 
 // When user calls your tool:
@@ -241,7 +254,7 @@ For real-time interactions:
 ```python
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.ELICITATION)
 
-# Shows payment UI immediately when tool is called (if supported by client)
+# Shows payment link immediately when tool is called (if supported by client)
 # Waits for payment before proceeding
 ```
 
@@ -249,21 +262,21 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-new PayMCP(mcp, { 
-    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+installPayMCP(mcp, { 
+    providers: [StripeProvider({ apiKey: "sk_test_..." })],
     payment_flow: PaymentFlow.ELICITATION 
 });
 
-// Shows payment UI immediately when tool is called (if supported by client)
+// Shows payment link immediately when tool is called (if supported by client)
 // Waits for payment before proceeding
 ```
 
 </TabItem>
 </Tabs>
 
-### PROGRESS (Background Processing)
+### PROGRESS (Experimental Auto-Checking)
 
-For long-running operations:
+For experimental auto-checking of payment status:
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -279,8 +292,8 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-new PayMCP(mcp, { 
-    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+installPayMCP(mcp, { 
+    providers: [StripeProvider({ apiKey: "sk_test_..." })],
     payment_flow: PaymentFlow.PROGRESS 
 });
 
@@ -329,9 +342,9 @@ import { PayMCP, price } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
 const mcp = new FastMCP("Test Server");
-new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
 
-server.registerTool(
+mcp.tool(
   "test_payment_integration",
   {
     description: "Test payment integration with greeting",

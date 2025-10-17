@@ -57,9 +57,22 @@ class PayMCP {
 
 Use the canonical provider list format:
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 providers = [StripeProvider(apiKey="sk_test_...")]
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = [StripeProvider({ apiKey: "sk_test_..." })];
+```
+
+</TabItem>
+</Tabs>
 
 Alternative formats are also supported (config mapping, mixed styles) - see the Alternative Configuration section below.
 
@@ -89,10 +102,10 @@ PayMCP(
 import { PayMCP, PaymentFlow } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
-new PayMCP(
+PayMCP(
     mcp,
     {
-        providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+        providers: [StripeProvider({ apiKey: "sk_test_..." })],
         payment_flow: PaymentFlow.TWO_STEP
     }
 );
@@ -105,6 +118,9 @@ new PayMCP(
 
 Enum defining available payment flow strategies.
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 class PaymentFlow(str, Enum):
     TWO_STEP = "two_step"
@@ -112,13 +128,27 @@ class PaymentFlow(str, Enum):
     PROGRESS = "progress"
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+enum PaymentFlow {
+    TWO_STEP = "two_step",
+    ELICITATION = "elicitation",
+    PROGRESS = "progress"
+}
+```
+
+</TabItem>
+</Tabs>
+
 #### Flow Types
 
 | Flow | Description | Best For |
 |------|-------------|----------|
 | `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
-| `ELICITATION` | Interactive payment during execution | Real-time interactions |
-| `PROGRESS` | Background payment with progress updates | Real-time interactions  |
+| `ELICITATION` | Payment link during execution | Real-time interactions |
+| `PROGRESS` | Experimental auto-checking of payment status | Real-time interactions  |
 
 ## Decorators
 
@@ -168,7 +198,7 @@ def generate_data_report(input: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "generate_data_report",
   {
     description: "Generate a data report from input",
@@ -184,6 +214,40 @@ server.registerTool(
 </TabItem>
 </Tabs>
 
+## Payment Providers
+
+PayMCP provides an extensible provider system that abstracts payment providers behind a common interface. Providers can be supplied in multiple ways to give you maximum flexibility:
+
+### Configuration Methods
+
+#### Recommended Provider Development
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp.providers import StripeProvider
+
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { StripeProvider } from 'paymcp/providers';
+
+installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+```
+
+</TabItem>
+</Tabs>
+
+This flexibility allows you to:
+- Mix different configuration styles in the same setup
+- Use custom providers alongside built-in ones
+- Dynamically configure providers at runtime
+- Share provider instances across multiple PayMCP setups
 
 ## Custom Provider Development
 
@@ -265,7 +329,7 @@ import { registerProvider } from 'paymcp/providers';
 registerProvider("my-gateway", MyProvider);
 
 // Now use with config mapping
-new PayMCP(mcp, {
+PayMCP(mcp, {
     providers: {
         "my-gateway": { api_key: "...", custom_option: "value" }
     }
@@ -296,7 +360,7 @@ PayMCP(mcp, providers={
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-new PayMCP(mcp, {
+installPayMCP(mcp, {
     providers: {
         "custom": {
             class: "my_package.providers:MyProvider",
@@ -314,9 +378,22 @@ new PayMCP(mcp, {
 
 ### Stripe
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 providers = [StripeProvider(apiKey="sk_test_...")]
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = [StripeProvider({ apiKey: "sk_test_..." })];
+```
+
+</TabItem>
+</Tabs>
 
 #### Parameters
 
@@ -326,6 +403,9 @@ providers = [StripeProvider(apiKey="sk_test_...")]
 
 ### Walleot
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 providers = {
     "walleot": {
@@ -334,17 +414,44 @@ providers = {
 }
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = {
+    "walleot": {
+        apiKey: string              // Required: Walleot API key
+    }
+};
+```
+
+</TabItem>
+</Tabs>
+
 #### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `apiKey` | `str` | Yes | Walleot API key (wk_test_... or wk_live_...) |
+| `apiKey` | `str` | Yes | Walleot API key (sk_test_... or sk_live_...) |
 
 ### PayPal
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 providers = [PayPalProvider(client_id="...", client_secret="...", sandbox=True)]
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = [PayPalProvider({ client_id: "...", client_secret: "...", sandbox: true })];
+```
+
+</TabItem>
+</Tabs>
 
 #### Parameters
 
@@ -355,6 +462,9 @@ providers = [PayPalProvider(client_id="...", client_secret="...", sandbox=True)]
 | `sandbox` | `bool` | No | `True` | Use PayPal sandbox environment |
 
 ### Square
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 providers = {
@@ -368,6 +478,24 @@ providers = {
 }
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = {
+    "square": {
+        access_token: string,        // Required: Square access token
+        location_id: string,         // Required: Square location ID
+        sandbox: boolean,            // Optional: Use sandbox environment
+        redirect_url: string,        // Optional: Redirect URL
+        api_version: string          // Optional: API version
+    }
+};
+```
+
+</TabItem>
+</Tabs>
+
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
@@ -380,16 +508,34 @@ providers = {
 
 ### Adyen
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 providers = {
     "adyen": {
         "api_key": str,             # Required: Adyen API key
         "merchant_account": str,    # Required: Merchant account name
-        "return_url": str,          # Required: Return URL
         "sandbox": bool,            # Optional: Use test environment
     }
 }
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = {
+    "adyen": {
+        api_key: string,             // Required: Adyen API key
+        merchant_account: string,   // Required: Merchant account name
+        sandbox: boolean             // Optional: Use test environment
+    }
+};
+```
+
+</TabItem>
+</Tabs>
 
 #### Parameters
 
@@ -397,14 +543,26 @@ providers = {
 |-----------|------|----------|---------|-------------|
 | `api_key` | `str` | Yes | - | Adyen API key |
 | `merchant_account` | `str` | Yes | - | Adyen merchant account identifier |
-| `return_url` | `str` | Yes | - | URL to return after payment |
 | `sandbox` | `bool` | No | `True` | Use Adyen test environment |
 
 ### Coinbase Commerce
 
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 providers = [CoinbaseProvider(api_key="...")]
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+providers = [CoinbaseProvider({ api_key: "..." })];
+```
+
+</TabItem>
+</Tabs>
 
 #### Parameters
 
@@ -416,12 +574,15 @@ providers = [CoinbaseProvider(api_key="...")]
 
 ### TWO_STEP Flow
 
-The TWO_STEP flow splits your tool into two separate tools:
+The TWO_STEP flow splits your tool execution into two separate tools:
 
 1. **Initiate**: To create and return payment information
 2. **Confirm**: Separate confirmation tool executes the original function after payment succeed
 
 #### Response Format (Initiate)
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 {
@@ -431,6 +592,21 @@ The TWO_STEP flow splits your tool into two separate tools:
     "next_step": str,            # Name of confirmation tool
 }
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+{
+    message: string,              // Payment instructions for user
+    payment_url: string,          // URL for user to complete payment
+    payment_id: string,           // Unique payment identifier
+    next_step: string             // Name of confirmation tool
+}
+```
+
+</TabItem>
+</Tabs>
 
 #### Confirmation Tool
 
@@ -445,7 +621,7 @@ Example:
 
 ### ELICITATION Flow
 
-The ELICITATION flow handles payment interactively during tool execution.
+The ELICITATION flow handles payment by showing a link during tool execution.
 
 #### Requirements
 
@@ -458,7 +634,7 @@ Returns the original tool's response after successful payment.
 
 ### PROGRESS Flow
 
-The PROGRESS flow shows payment status and progress updates.
+The PROGRESS flow shows payment status and experimental auto-checking.
 
 #### Features
 
@@ -566,31 +742,6 @@ PayMCP(
 )
 ```
 
-### Development vs Production
-
-```python
-# Development
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": os.getenv("STRIPE_TEST_KEY"),  # sk_test_...
-            "success_url": "http://localhost:3000/success"
-        }
-    }
-)
-
-# Production
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": os.getenv("STRIPE_LIVE_KEY"),  # sk_live_...
-            "success_url": "https://yourapp.com/success"
-        }
-    }
-)
-```
 
 ## Version Information
 
@@ -601,12 +752,6 @@ import paymcp
 print(f"PayMCP version: {paymcp.__version__}")
 ```
 
-### Changelog
-
-**Latest Features:**
-- Extensible provider system with multiple configuration styles
-- Custom provider support via `BasePaymentProvider`
-- Provider registration with `register_provider()`
 
 ## Next Steps
 

@@ -52,14 +52,14 @@ PayMCP(mcp, providers=[
 ```typescript
 import { SquareProvider } from 'paymcp/providers';
 
-new PayMCP(mcp, { 
+installPayMCP(mcp, { 
     providers: [
-        new SquareProvider({
+        SquareProvider({
             access_token: "YOUR_ACCESS_TOKEN",
             location_id: "YOUR_LOCATION_ID",
             sandbox: true
         })
-    ] 
+    ]
 });
 ```
 
@@ -83,7 +83,7 @@ def test_square_payment(item: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "test_square_payment",
   {
     description: "Test Square payment integration",
@@ -117,4 +117,3 @@ providers = {
 
 - **[Square Documentation](https://developer.squareup.com/)** - Official docs
 - **[Test Integration](../quickstart#testing-your-integration)** - Verify setup
-- **[Payment Flows](../concepts-and-flows#two_step-flow)** - Choose optimal flow

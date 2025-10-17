@@ -4,162 +4,14 @@ title: Payment Flows
 description: Understanding PayMCP architecture and choosing the right payment flow for your use case
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Payment Flows
 
 PayMCP provides flexible payment flows to handle different interaction patterns between your MCP tools and users/agents. Choose the flow that best fits your application's needs.
 
-## Payment Providers
-
-PayMCP provides an extensible provider system that abstracts payment providers behind a common interface. Providers can be supplied in multiple ways to give you maximum flexibility:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-@price(amount=1.00, currency="USD")
-def process_data(input: str, ctx: Context) -> str:
-    """Process input data"""
-    return "Tool executed successfully"
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-server.registerTool(
-  "process_data",
-  {
-    description: "Process input data",
-    inputSchema: { input: z.string() },
-    price: { amount: 1.00, currency: "USD" },
-  },
-  async ({ input }, ctx) => {
-    return { content: [{ type: "text", text: "Tool executed successfully" }] };
-  }
-);
-```
-
-</TabItem>
-</Tabs>
-
-### Configuration Methods
-#### Recommended Provider Development
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-from paymcp.providers import StripeProvider
-
-PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-import { StripeProvider } from 'paymcp/providers';
-
-new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
-```
-
-</TabItem>
-</Tabs>
-
-This flexibility allows you to:
-- Mix different configuration styles in the same setup
-- Use custom providers alongside built-in ones
-- Dynamically configure providers at runtime
-- Share provider instances across multiple PayMCP setups
-
-#### Custom Provider Development
-
-Creating custom providers is straightforward. Any provider must subclass `BasePaymentProvider` and implement the required methods:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-from paymcp.providers import BasePaymentProvider
-
-class MyProvider(BasePaymentProvider):
-    def __init__(self, api_key: str, **kwargs):
-        self.api_key = api_key
-        super().__init__(**kwargs)
-    
-    def create_payment(self, amount: float, currency: str, description: str):
-        # Return (payment_id, payment_url)
-        return "payment_id", f"https://myprovider.com/pay/payment_id"
-    
-    def get_payment_status(self, payment_id: str) -> str:
-        return "paid"
-
-PayMCP(mcp, providers=[MyProvider(api_key="...")])
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-import { BasePaymentProvider } from 'paymcp/providers';
-
-class MyProvider extends BasePaymentProvider {
-    constructor(apiKey: string, options?: any) {
-        super(options);
-        this.apiKey = apiKey;
-    }
-    
-    createPayment(amount: number, currency: string, description: string): [string, string] {
-        // Return [payment_id, payment_url]
-        return ["payment_id", "https://myprovider.com/pay/payment_id"];
-    }
-    
-    getPaymentStatus(paymentId: string): string {
-        return "paid";
-    }
-}
-
-new PayMCP(mcp, { providers: [new MyProvider({ api_key: "..." })] });
-```
-
-</TabItem>
-</Tabs>
-
-You can also register custom providers for use with config mappings:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-from paymcp.providers import register_provider
-
-register_provider("my-gateway", MyProvider)
-
-PayMCP(mcp, providers={
-    "my-gateway": {"api_key": "...", "custom_option": "value"}
-})
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-import { registerProvider } from 'paymcp/providers';
-
-registerProvider("my-gateway", MyProvider);
-
-new PayMCP(mcp, {
-    providers: {
-        "my-gateway": { api_key: "...", custom_option: "value" }
-    }
-});
-```
-
-</TabItem>
-</Tabs>
-
-
-### Tool Decoration
+## Tool Decoration
 
 The `@price` decorator adds payment requirements to your MCP tools without changing their core functionality:
 
@@ -186,7 +38,7 @@ def analyze_text(text: str, ctx: Context) -> dict:
 
 ```typescript
 // Regular MCP tool
-server.registerTool("analyze_text", {
+mcp.tool("analyze_text", {
     description: "Analyze text content and return insights",
     inputSchema: { text: z.string() }
 }, async ({ text }, ctx) => {
@@ -194,7 +46,7 @@ server.registerTool("analyze_text", {
 });
 
 // Same tool with payment requirement
-server.registerTool("analyze_text", {
+mcp.tool("analyze_text", {
     description: "Analyze text content and return insights",
     inputSchema: { text: z.string() },
     price: { amount: 0.25, currency: "USD" }
@@ -212,10 +64,45 @@ The `payment_flow` parameter determines how users interact with your paid tools.
 
 ### TWO_STEP Flow
 
-The default flow splits your tool into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don’t need to change your function code — just write your tool as usual, and PayMCP will automatically create both tools.
+The default flow splits your tool execution into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don't need to change your function code — just write your tool as usual, and PayMCP will handle the split automatically.
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+
+```
+┌─────────┐      ┌─────────┐       ┌──────────┐       ┌─────────┐
+│  User   │      │   LLM   │       │MCP Server│       │ PayMCP  │
+└────┬────┘      └────┬────┘       └────┬─────┘       └────┬────┘
+     │                │                 │                  │
+     │ Call tool      │                 │                  │
+     │───────────────>│                 │                  │
+     │                │ Call tool       │                  │
+     │                │────────────────>│                  │
+     │                │                 │ Create payment   │
+     │                │                 │─────────────────>│
+     │                │                 │                  │
+     │                │                 │<─────────────────│
+     │                │                 │ payment_url +    │
+     │                │ Return URL +    │ next_step        │
+     │                │<────────────────│                  │
+     │                │ next_step       │                  │
+     │<───────────────│                 │                  │
+     │ Show payment   │                 │                  │
+     │                │                 │                  │
+     │ [User pays externally]           │                  │
+     │                │                 │                  │
+     │ Confirm payment│                 │                  │
+     │───────────────>│                 │                  │
+     │                │ Call confirm_*  │                  │
+     │                │────────────────>│                  │
+     │                │                 │ Verify payment   │
+     │                │                 │─────────────────>│
+     │                │                 │                  │
+     │                │                 │ Execute tool     │
+     │                │                 │<─────────────────│
+     │                │ Return result   │                  │
+     │                │<────────────────│                  │
+     │ Get result     │                 │                  │
+     │<───────────────│                 │                  │
+```
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -238,9 +125,9 @@ def generate_data_report(data: str, ctx: Context) -> str:
 ```typescript
 import { StripeProvider } from 'paymcp/providers';
 
-new PayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
 
-server.registerTool(
+mcp.tool(
   "generate_data_report",
   {
     description: "Generate a data report from input data",
@@ -279,8 +166,38 @@ MCP server: Executes generate_report() → Returns actual report
 
 ### ELICITATION Flow
 
+```
+┌─────────┐      ┌─────────┐       ┌──────────┐       ┌─────────┐
+│  User   │      │   LLM   │       │MCP Server│       │ PayMCP  │
+└────┬────┘      └────┬────┘       └────┬─────┘       └────┬────┘
+     │                │                 │                  │
+     │ Call tool      │                 │                  │
+     │───────────────>│                 │                  │
+     │                │ Call tool       │                  │
+     │                │────────────────>│                  │
+     │                │                 │ Create payment   │
+     │                │                 │─────────────────>│
+     │                │                 │                  │
+     │                │                 │ Send elicitation │
+     │                │<─────────────────────────────────│
+     │ Payment UI     │                 │                  │
+     │<───────────────│                 │                  │
+     │                │                 │                  │
+     │ [User pays]    │                 │                  │
+     │────────────────────────────────────────────────────>│
+     │                │                 │                  │
+     │                │                 │ Verify & Execute │
+     │                │                 │<─────────────────│
+     │                │ Return result   │                  │
+     │                │<────────────────│                  │
+     │ Get result     │                 │                  │
+     │<───────────────│                 │                  │
+```
 
 Prompts the user for payment during tool execution and waits for completion:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```python
 PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.ELICITATION)
@@ -291,6 +208,31 @@ def analyze_text_quickly(text: str, ctx: Context) -> str:
     """Analyze text content quickly"""
     return f"Analysis: {text} processed successfully"
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, { 
+    providers: {...}, 
+    payment_flow: PaymentFlow.ELICITATION 
+});
+
+mcp.tool(
+  "analyze_text_quickly",
+  {
+    description: "Analyze text content quickly",
+    inputSchema: { text: z.string() },
+    price: { amount: 0.25, currency: "USD" },
+  },
+  async ({ text }, ctx) => {
+    return { content: [{ type: "text", text: `Analysis: ${text} processed successfully` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
 
 **User Experience:**
 ```
@@ -311,24 +253,80 @@ MCP server: Executes quick_analysis() → Returns result
 
 ### PROGRESS Flow
 
+```
+┌─────────┐      ┌─────────┐       ┌──────────┐       ┌─────────┐
+│  User   │      │   LLM   │       │MCP Server│       │ PayMCP  │
+└────┬────┘      └────┬────┘       └────┬─────┘       └────┬────┘
+     │                │                 │                  │
+     │ Call tool      │                 │                  │
+     │───────────────>│                 │                  │
+     │                │ Call tool       │                  │
+     │                │────────────────>│                  │
+     │                │                 │ Create payment   │
+     │                │                 │─────────────────>│
+     │                │                 │                  │
+     │                │ Show payment    │                  │
+     │                │<─────────────────────────────────│
+     │ Payment link + │ link + progress │                  │
+     │<───────────────│                 │                  │
+     │                │                 │ [Polling...]     │
+     │ [User pays     │                 │                  │
+     │  externally]   │                 │                  │
+     │                │                 │ Payment detected │
+     │                │                 │<─────────────────│
+     │                │                 │ Execute tool     │
+     │                │ Return result   │                  │
+     │                │<────────────────│                  │
+     │ Get result     │                 │                  │
+     │<───────────────│                 │                  │
+```
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
 PayMCP(mcp, providers={...}, payment_flow=PaymentFlow.PROGRESS)
 
 @mcp.tool()
 @price(amount=2.00, currency="USD")
-def process_large_dataset(dataset_url: str, ctx: Context) -> dict:
-    """Process a large dataset from URL"""
+def process_data_with_auto_check(data: str, ctx: Context) -> dict:
+    """Process data with automatic payment checking"""
     return {"processing": "completed", "results": "..."}
 ```
 
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, { 
+    providers: {...}, 
+    payment_flow: PaymentFlow.PROGRESS 
+});
+
+mcp.tool(
+  "process_data_with_auto_check",
+  {
+    description: "Process data with automatic payment checking",
+    inputSchema: { data: z.string() },
+    price: { amount: 2.00, currency: "USD" },
+  },
+  async ({ data }, ctx) => {
+    return { content: [{ type: "text", text: JSON.stringify({"processing": "completed", "results": "..."}) }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
 **User Experience:**
 ```
-User: "Please process this large dataset: http://data.csv"
-LLM: tool call → process_large_dataset("http://data.csv")
+User: "Please process this data: sample data"
+LLM: tool call → process_data_with_auto_check("sample data")
 MCP server: Returns progress indicator and payment link in a progress message
 User: [Pays]
 MCP server: "Payment received — generating result..."
-MCP server: Executes process_large_dataset() → Returns results
+MCP server: Executes process_data_with_auto_check() → Returns results
 ```
 
 **Advantages:**

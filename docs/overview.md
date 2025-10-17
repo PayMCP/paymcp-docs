@@ -13,22 +13,22 @@ import TabItem from '@theme/TabItem';
 
 PayMCP is a lightweight SDK that helps you add monetization to your MCP-based tools, servers, or agents. It supports multiple payment providers and integrates seamlessly with MCP's tool/resource interface.
 
-## 🔧 Features
+## Features
 
-✅ Add `@price(...)` decorators to your MCP tools to enable payments  
-🔁 Choose between different payment flows (elicit, confirm, etc.)  
-🔌 Pluggable support for providers like Walleot, Stripe, and more  
-⚙️ Easy integration with FastMCP or other MCP servers  
+Add `@price(...)` decorators to your MCP tools to enable payments  
+Choose between different payment flows (elicit, confirm, etc.)  
+Pluggable support for providers like Walleot, Stripe, and more  
+Easy integration with FastMCP or other MCP servers  
 
-## 🧭 Payment Flows
+## Payment Flows
 
 The `payment_flow` parameter controls how the user is guided through the payment process. Choose the strategy that fits your use case:
 
 **PaymentFlow.TWO_STEP** (default)  
-Splits the tool into two separate MCP methods. The first step returns a `payment_url` and a `next_step` method for confirmation. The second method (e.g. `confirm_add_payment`) verifies payment and runs the original logic. Supported in most clients.
+Splits the tool execution into two separate MCP methods. The first step returns a `payment_url` and a `next_step` method for confirmation. The second method (e.g. `confirm_add_payment`) verifies payment and runs the original logic. Supported in most clients.
 
 **PaymentFlow.ELICITATION**  
-Sends the user a payment link when the tool is invoked. If the client supports it, a payment UI is displayed immediately. Once the user completes payment, the tool proceeds.
+Sends the user a payment link when the tool is invoked. If the client supports it, the payment link is displayed immediately. Once the user completes payment, the tool proceeds.
 
 **PaymentFlow.PROGRESS**  
 Shows payment link and a progress indicator while the system waits for payment confirmation in the background. The result is returned automatically once payment is completed.
@@ -36,13 +36,26 @@ Shows payment link and a progress indicator while the system waits for payment c
 
 All flows require the MCP client to support the corresponding interaction pattern. When in doubt, start with TWO_STEP.
 
-## 🚀 Quickstart
+## Quickstart
 
-Install the SDK from PyPI:
+Install the SDK:
+
+<Tabs>
+<TabItem value="python" label="Python">
 
 ```bash
 pip install mcp paymcp
 ```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```bash
+npm install @modelcontextprotocol/sdk paymcp
+```
+
+</TabItem>
+</Tabs>
 
 Initialize PayMCP:
 
@@ -114,7 +127,7 @@ def add_numbers(a: int, b: int, ctx: Context) -> int:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.tool(
   "add_numbers",
   {
     description: "Add two numbers together",
@@ -132,7 +145,7 @@ server.registerTool(
 
 **Demo server:** For a complete setup, see the example repo: [python-paymcp-server-demo](https://github.com/PayMCP/python-paymcp-server-demo).
 
-## ⚠️ Security Warning: STDIO Mode Not Supported
+## Security Warning: STDIO Mode Not Supported
 
 **PayMCP cannot be used with STDIO mode deployments.** STDIO mode requires end users to download and run MCP servers locally, which would expose your payment provider API keys.
 
@@ -142,7 +155,7 @@ server.registerTool(
 - Users connect via network protocols (HTTP/WebSocket)
 - No sensitive credentials are distributed to end users
 
-## 🧩 Supported Providers
+## Supported Providers
 
 ✅ Adyen  
 ✅ Coinbase Commerce  
