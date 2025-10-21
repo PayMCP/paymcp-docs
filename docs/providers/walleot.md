@@ -12,19 +12,15 @@ Walleot enables seamless payments with pre-purchased credits and automatic payme
 
 - **Pre-purchased Credits** - Users buy credits in advance for frictionless payments
 - **Auto Payments** - Automatic payment processing for approved amounts
-- **Instant Settlement** - Receive payments in seconds, not days
-- **Global Access** - No geographic restrictions or bank requirements
-- **Low Fees** - Minimal transaction costs
-- **Developer-Friendly** - Simple API with comprehensive testing tools
 
 ## Quick Setup
 
 ### 1. Get Your API Keys
 
 1. Sign up at [walleot.com](https://walleot.com)
-2. Complete KYC verification (required for settlement)
-3. Navigate to **Developers** → **API Keys**
-4. Copy your **API Key** (starts with `sk_test_` for testing)
+2. Create a Merchant Account
+3. Navigate to **API Keys**
+4. Click **Create API Key** to generate a new key
 
 ### 2. Configuration
 
@@ -44,9 +40,10 @@ PayMCP(mcp, providers=[WalleotProvider(api_key="sk_test_...")])
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
+import { installPayMCP } from 'paymcp';
 import { WalleotProvider } from 'paymcp/providers';
 
-installPayMCP(mcp, { providers: [WalleotProvider({ api_key: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [WalleotProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -69,6 +66,8 @@ def test_walleot_payment(message: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
+import { z } from 'zod';
+
 mcp.tool(
   "test_walleot_payment",
   {
@@ -91,5 +90,4 @@ Test with small amounts first.
 
 - **Walleot Documentation**: [docs.walleot.com](https://docs.walleot.com)
 - **PayMCP Issues**: [GitHub Issues](https://github.com/PayMCP/paymcp/issues)
-- **Walleot Support**: Available 24/7 in your dashboard
-- **Developer Discord**: [Join our community](https://discord.gg/walleot)
+- **Developer Discord**: [Join community](https://discord.gg/walleot)

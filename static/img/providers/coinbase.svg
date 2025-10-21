@@ -1,0 +1,15 @@
+<svg width="156" height="56" viewBox="0 0 156 56" xmlns="http://www.w3.org/2000/svg">
+  <rect width="156" height="56" rx="12" fill="#0052FF"/>
+  <text
+    x="50%"
+    y="50%"
+    dominant-baseline="middle"
+    text-anchor="middle"
+    font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    font-size="24"
+    font-weight="600"
+    fill="#FFFFFF"
+  >
+    Coinbase
+  </text>
+</svg>

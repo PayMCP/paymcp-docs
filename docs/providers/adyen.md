@@ -12,10 +12,8 @@ Adyen is a global payment platform supporting 250+ payment methods across 200+ c
 
 - **Global Scale** - 250+ payment methods, 200+ countries
 - **Enterprise Grade** - Used by major platforms (Uber, Spotify, etc.)
-- **Unified Platform** - Online, mobile, and in-store payments
 - **Advanced Routing** - Smart payment routing for higher success rates
 - **Real-time Data** - Comprehensive analytics and reporting
-- **Regulatory Compliance** - PCI DSS Level 1, local compliance
 
 ## Quick Setup
 
@@ -121,7 +119,7 @@ Adyen provides comprehensive testing with all configuration methods:
 # Config mapping
 providers = {
     "adyen": {
-        "api_key": "YOUR_TEST_API_KEY",
+        "apiKey": "YOUR_TEST_API_KEY",
         "merchant_account": "YOUR_TEST_MERCHANT_ACCOUNT",
         "sandbox": True
     }

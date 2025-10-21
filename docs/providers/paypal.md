@@ -13,9 +13,6 @@ PayPal enables payments from PayPal balance, credit cards, and bank transfers. W
 - **400M+ Users** - Access PayPal's massive user base
 - **Multiple Payment Methods** - PayPal balance, cards, bank transfers
 - **Global Coverage** - Available in 200+ countries
-- **Trusted Brand** - Users trust PayPal checkout
-- **Buyer Protection** - Built-in purchase protection
-- **Mobile Optimized** - Excellent mobile payment experience
 
 ## Quick Setup
 

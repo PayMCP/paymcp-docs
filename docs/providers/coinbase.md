@@ -15,7 +15,6 @@ Coinbase Commerce enables cryptocurrency payments with support for Bitcoin, Ethe
 - **Low Fees** - 1% transaction fee
 - **Global Access** - Accept payments from anywhere
 - **Self-Custody** - You control your crypto keys
-- **Simple Integration** - Easy API with comprehensive docs
 
 ## Quick Setup
 
@@ -46,7 +45,7 @@ PayMCP(mcp, providers=[CoinbaseProvider(api_key="YOUR_API_KEY")])
 ```typescript
 import { CoinbaseProvider } from 'paymcp/providers';
 
-installPayMCP(mcp, { providers: [CoinbaseProvider({ api_key: "YOUR_API_KEY" })] });
+installPayMCP(mcp, { providers: [CoinbaseProvider({ apiKey: "YOUR_API_KEY" })] });
 ```
 
 </TabItem>
@@ -99,25 +98,6 @@ providers = {
 ```
 
 
-## Testing
-
-### Test Environment
-
-Coinbase Commerce provides sandbox for testing:
-
-```python
-# Test with small amounts on live network
-@price(amount=0.01, currency="USD")  # $0.01 test payment
-def test_crypto(ctx: Context) -> str:
-    return "Test payment successful"
-```
-
-### Test Cryptocurrencies
-
-Use testnets for development:
-- **Bitcoin Testnet** - Test BTC transactions
-- **Ethereum Goerli** - Test ETH/USDC transactions
-- **Faucets** - Get test crypto for development
 
 ## Support
 

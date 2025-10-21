@@ -11,9 +11,7 @@ import TabItem from '@theme/TabItem';
 
 Quick fixes for the most common PayMCP issues.
 
-## Critical Security Issue
-
-### STDIO Mode Deployment Error
+## STDIO Mode Deployment Error
 
 **Error**: STDIO mode disabled by PayMCP
 

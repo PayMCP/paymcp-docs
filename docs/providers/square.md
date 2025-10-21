@@ -9,13 +9,9 @@ description: Accept payments using Square's payment platform with support for ca
 Square provides payment processing with support for credit cards, digital wallets, and in-person payments. Known for transparent pricing and excellent developer tools.
 
 ## Features
-
-- **Transparent Pricing** - No hidden fees, simple rate structure
-- **In-Person Payments** - Supports both online and offline transactions
-- **Digital Wallets** - Apple Pay, Google Pay, and more
 - **Global Coverage** - Available in US, Canada, UK, Australia, and more
 - **Developer-Friendly** - Excellent sandbox and testing tools
-- **PCI Compliance** - Built-in security and compliance
+
 
 ## Quick Setup
 

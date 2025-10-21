@@ -41,7 +41,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          routeBasePath: '/', // Serve the docs at the site's root
+        routeBasePath: '/docs', // Serve the docs under /docs while keeping marketing pages at /
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
@@ -69,6 +69,11 @@ const config: Config = {
       },
       items: [
         {
+          to: '/docs',
+          label: 'Docs',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/PayMCP',
           label: 'GitHub',
           position: 'right',
@@ -83,11 +88,11 @@ const config: Config = {
           items: [
             {
               label: 'Overview',
-              to: '/paymcp/overview',
+              to: '/docs',
             },
             {
               label: 'Quickstart',
-              to: '/quickstart',
+              to: '/docs/quickstart',
             },
           ],
         },
@@ -105,12 +110,12 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/PayMCP/paymcp-docs',
+              href: 'https://github.com/PayMCP',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} PayMCP. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} PayMCP`,
     },
     prism: {
       theme: prismThemes.github,

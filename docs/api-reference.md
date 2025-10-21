@@ -23,7 +23,8 @@ class PayMCP:
         self,
         mcp_instance,
         providers: list = None,
-        payment_flow: PaymentFlow = PaymentFlow.TWO_STEP
+        payment_flow: PaymentFlow = PaymentFlow.TWO_STEP,
+        state_store = None
     )
 ```
 
@@ -36,7 +37,8 @@ class PayMCP {
         mcpInstance: FastMCP,
         options: {
             providers: Provider[],
-            payment_flow?: PaymentFlow
+            paymentFlow?: PaymentFlow,
+            stateStore?: StateStore;
         }
     )
 }
@@ -52,6 +54,7 @@ class PayMCP {
 | `mcp_instance` | `FastMCP` | Required | Your MCP server instance |
 | `providers` | `Union[dict, Iterable]` | `{}` | Payment provider configurations (see Provider Configuration section) |
 | `payment_flow` | `PaymentFlow` | `TWO_STEP` | Payment flow strategy |
+| `state_store` | `StateStore` | `InMemoryStateStore` | State Store for TWO_STEP flow |
 
 #### Provider Configuration
 
@@ -99,22 +102,19 @@ PayMCP(
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { PayMCP, PaymentFlow } from 'paymcp';
+import { installPayMCP, PaymentFlow } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
-PayMCP(
-    mcp,
-    {
-        providers: [StripeProvider({ apiKey: "sk_test_..." })],
-        payment_flow: PaymentFlow.TWO_STEP
-    }
-);
+installPayMCP(mcp, {
+    providers: [StripeProvider({ apiKey: "sk_test_..." })],
+    paymentFlow: PaymentFlow.TWO_STEP
+});
 ```
 
 </TabItem>
 </Tabs>
 
-### PaymentFlow
+## PaymentFlow
 
 Enum defining available payment flow strategies.
 
@@ -150,65 +150,47 @@ enum PaymentFlow {
 | `ELICITATION` | Payment link during execution | Real-time interactions |
 | `PROGRESS` | Experimental auto-checking of payment status | Real-time interactions  |
 
-## Decorators
+For more details about payment flow concepts, see [Concepts and Flows](./concepts-and-flows).
 
-### @price
 
-Decorator to add payment requirements to MCP tools.
+## StateStore
+
+By default, when using the `TWO_STEP` payment flow, PayMCP stores pending tool arguments in memory using a process-local `Map`. This is not durable and will not work across server restarts or multiple server instances (no horizontal scaling).
+
+To enable durable and scalable state storage, you can provide a custom StateStore implementation. PayMCP includes a built-in RedisStateStore, which works with any Redis-compatible client.
+
+Example: Using Redis for State Storage
 
 <Tabs>
 <TabItem value="python" label="Python">
 
 ```python
-def price(amount: float, currency: str = "USD")
+from redis.asyncio import from_url
+from paymcp import PayMCP, RedisStateStore
+
+redis = await from_url("redis://localhost:6379")
+PayMCP(
+    mcp,
+    providers={"stripe": {"apiKey": "..."}},
+    state_store=RedisStateStore(redis)
+)
 ```
 
 </TabItem>
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-// In registerTool options:
-price: { amount: number, currency?: string }
-```
+import { createClient } from "redis";
+import { installPayMCP, RedisStateStore, PaymentFlow } from "paymcp";
 
-</TabItem>
-</Tabs>
+const redisClient = createClient({ url: "redis://localhost:6379" });
+await redisClient.connect();
 
-#### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `amount` | `float` | Required | Payment amount |
-| `currency` | `str` | `"USD"` | ISO 4217 currency code |
-
-#### Example
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-@mcp.tool()
-@price(amount=0.50, currency="USD")
-def generate_data_report(input: str, ctx: Context) -> str:
-    """Generate a data report from input"""
-    return f"Report: {input}"
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-mcp.tool(
-  "generate_data_report",
-  {
-    description: "Generate a data report from input",
-    inputSchema: { input: z.string() },
-    price: { amount: 0.50, currency: "USD" },
-  },
-  async ({ input }, ctx) => {
-    return { content: [{ type: "text", text: `Report: ${input}` }] };
-  }
-);
+installPayMCP(server, {
+  providers: { /* ... */ },
+  paymentFlow: PaymentFlow.TWO_STEP,
+  stateStore: new RedisStateStore(redisClient),
+});
 ```
 
 </TabItem>
@@ -235,9 +217,65 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
+import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+```
+
+</TabItem>
+</Tabs>
+
+#### Alternative Configuration
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(mcp, providers={
+    "stripe": {"apiKey": "..."}
+})
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { installPayMCP } from 'paymcp';
+
+installPayMCP(mcp, {
+    providers: {
+        "stripe": { apiKey: "...", }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp.providers import StripeProvider
+
+PayMCP(mcp, providers={
+    "stripe": StripeProvider(apiKey="sk_test_...")
+})
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+```typescript
+import { installPayMCP } from 'paymcp';
+import { StripeProvider } from 'paymcp/providers';
+
+installPayMCP(mcp, {
+    providers: {
+        "stripe": StripeProvider({ apiKey: "sk_test_..." })
+    }
+});
 ```
 
 </TabItem>
@@ -302,73 +340,65 @@ class MyProvider extends BasePaymentProvider {
 </TabItem>
 </Tabs>
 
-### Provider Registration
+## Decorators
 
-Register custom providers for use with config mappings:
+### @price
+
+Decorator to add payment requirements to MCP tools.
 
 <Tabs>
 <TabItem value="python" label="Python">
 
 ```python
-from paymcp.providers import register_provider
-
-register_provider("my-gateway", MyProvider)
-
-# Now use with config mapping
-PayMCP(mcp, providers={
-    "my-gateway": {"api_key": "...", "custom_option": "value"}
-})
+def price(amount: float, currency: str = "USD")
 ```
 
 </TabItem>
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { registerProvider } from 'paymcp/providers';
-
-registerProvider("my-gateway", MyProvider);
-
-// Now use with config mapping
-PayMCP(mcp, {
-    providers: {
-        "my-gateway": { api_key: "...", custom_option: "value" }
-    }
-});
+// In registerTool options:
+price: { amount: number, currency?: string }
 ```
 
 </TabItem>
 </Tabs>
 
-### Class Path Configuration
+#### Parameters
 
-Use fully-qualified class paths in config:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `amount` | `float` | Required | Payment amount |
+| `currency` | `str` | `"USD"` | ISO 4217 currency code |
+
+#### Example
 
 <Tabs>
 <TabItem value="python" label="Python">
 
 ```python
-PayMCP(mcp, providers={
-    "custom": {
-        "class": "my_package.providers:MyProvider",
-        "api_key": "...",
-        "custom_config": "value"
-    }
-})
+@mcp.tool()
+@price(amount=0.50, currency="USD")
+def generate_data_report(input: str, ctx: Context) -> str:
+    """Generate a data report from input"""
+    return f"Report: {input}"
 ```
 
 </TabItem>
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-installPayMCP(mcp, {
-    providers: {
-        "custom": {
-            class: "my_package.providers:MyProvider",
-            api_key: "...",
-            custom_config: "value"
-        }
-    }
-});
+mcp.tool(
+  "generate_data_report",
+  {
+    description: "Generate a data report from input",
+    inputSchema: { input: z.string() },
+    price: { amount: 0.50, currency: "USD" },
+  },
+  async ({ input }, ctx) => {
+    return { content: [{ type: "text", text: `Report: ${input}` }] };
+  }
+);
 ```
 
 </TabItem>
@@ -570,86 +600,6 @@ providers = [CoinbaseProvider({ api_key: "..." })];
 |-----------|------|----------|---------|-------------|
 | `api_key` | `str` | Yes | - | Coinbase Commerce API key |
 
-## Payment Flow Details
-
-### TWO_STEP Flow
-
-The TWO_STEP flow splits your tool execution into two separate tools:
-
-1. **Initiate**: To create and return payment information
-2. **Confirm**: Separate confirmation tool executes the original function after payment succeed
-
-#### Response Format (Initiate)
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-{
-    "message": str,              # Payment instructions for user
-    "payment_url": str,          # URL for user to complete payment
-    "payment_id": str,           # Unique payment identifier
-    "next_step": str,            # Name of confirmation tool
-}
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-{
-    message: string,              // Payment instructions for user
-    payment_url: string,          // URL for user to complete payment
-    payment_id: string,           // Unique payment identifier
-    next_step: string             // Name of confirmation tool
-}
-```
-
-</TabItem>
-</Tabs>
-
-#### Confirmation Tool
-
-PayMCP automatically creates a confirmation tool with the pattern:
-```
-confirm_{original_tool_name}_payment
-```
-
-Example:
-- Original tool: `generate_image`
-- Confirmation tool: `confirm_generate_image_payment`
-
-### ELICITATION Flow
-
-The ELICITATION flow handles payment by showing a link during tool execution.
-
-#### Requirements
-
-- MCP client must support elicitation interactions
-- User must be available to complete payment during execution
-
-#### Response Format
-
-Returns the original tool's response after successful payment.
-
-### PROGRESS Flow
-
-The PROGRESS flow shows payment status and experimental auto-checking.
-
-#### Features
-
-- Real-time progress reporting via `ctx.report_progress()`
-- Automatic execution after payment confirmation
-
-#### Progress Messages
-
-```python
-await ctx.report_progress(
-    message="Waiting for payment confirmation...",
-    progress=25,
-    total=100
-)
-```
 
 
 

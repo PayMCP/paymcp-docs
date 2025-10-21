@@ -36,39 +36,9 @@ npm install paymcp
 
 - Python 3.8+ or Node.js 16+
 - An MCP server framework (FastMCP recommended)  
-- **Hosted server environment** (NOT STDIO mode)
+- **Hosted server environment** (not STDIO mode)
 - API keys from your chosen payment provider (kept secure on your server)
 
-## Deployment Security
-
-### Why PayMCP Requires Hosted Deployment
-
-PayMCP contains sensitive payment provider API keys that must never be exposed to end users:
-
-```python
-# These are SECRET and must stay on YOUR server
-providers = [
-    StripeProvider(apiKey="sk_live_..."),  # NEVER expose this
-    WalleotProvider(api_key="sk_live_...")  # NEVER expose this
-]
-```
-
-### Recommended Deployment
-
-```python
-# Deploy this on YOUR infrastructure, not user machines
-from mcp.server.fastmcp import FastMCP
-from paymcp import PayMCP
-from paymcp.providers import StripeProvider
-
-mcp = FastMCP("My Hosted AI Service")
-PayMCP(mcp, providers=[
-    StripeProvider(apiKey=os.getenv("STRIPE_SECRET_KEY"))  
-    # Secure on your server
-])
-
-
-```
 
 ## Basic Setup
 
@@ -90,9 +60,10 @@ mcp = FastMCP("My AI Assistant")
 
 ```typescript
 import { FastMCP } from '@mcp/server-fastmcp';
-import { PayMCP, price } from 'paymcp';
+import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 import type { Context } from '@mcp/server-fastmcp';
+import { z } from 'zod';
 
 const mcp = new FastMCP("My AI Assistant");
 ```
@@ -113,7 +84,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-installinstallPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -137,6 +108,8 @@ def generate_ai_image(prompt: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
+import { z } from 'zod';
+
 mcp.tool(
   "generate_ai_image",
   {
@@ -176,6 +149,8 @@ def analyze_document(document: str, ctx: Context) -> dict:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
+import { z } from 'zod';
+
 mcp.tool(
   "check_text_grammar",
   {
@@ -205,7 +180,6 @@ mcp.tool(
 </Tabs>
 
 
-
 ## Payment Flows
 
 Choose the payment flow that works best for your use case:
@@ -219,11 +193,6 @@ Best for most applications. Splits tool execution into two steps:
 
 ```python
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.TWO_STEP)
-
-# When user calls your tool:
-# 1. Returns payment link and confirmation method
-# 2. User pays and calls confirm_toolname_payment()
-# 3. Tool executes after payment confirmation
 ```
 
 </TabItem>
@@ -232,13 +201,8 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 ```typescript
 installPayMCP(mcp, { 
     providers: [StripeProvider({ apiKey: "sk_test_..." })],
-    payment_flow: PaymentFlow.TWO_STEP
+    paymentFlow: PaymentFlow.TWO_STEP
 });
-
-// When user calls your tool:
-// 1. Returns payment link and confirmation method
-// 2. User pays and calls confirm_toolname_payment()
-// 3. Tool executes after payment confirmation
 ```
 
 </TabItem>
@@ -255,7 +219,7 @@ For real-time interactions:
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.ELICITATION)
 
 # Shows payment link immediately when tool is called (if supported by client)
-# Waits for payment before proceeding
+# Waits for payment confirmation before proceeding
 ```
 
 </TabItem>
@@ -264,17 +228,17 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 ```typescript
 installPayMCP(mcp, { 
     providers: [StripeProvider({ apiKey: "sk_test_..." })],
-    payment_flow: PaymentFlow.ELICITATION 
+    paymentFlow: PaymentFlow.ELICITATION 
 });
 
 // Shows payment link immediately when tool is called (if supported by client)
-// Waits for payment before proceeding
+// Waits for payment confirmation before proceeding
 ```
 
 </TabItem>
 </Tabs>
 
-### PROGRESS (Experimental Auto-Checking)
+### PROGRESS (Experimental)
 
 For experimental auto-checking of payment status:
 
@@ -294,7 +258,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 ```typescript
 installPayMCP(mcp, { 
     providers: [StripeProvider({ apiKey: "sk_test_..." })],
-    payment_flow: PaymentFlow.PROGRESS 
+    paymentFlow: PaymentFlow.PROGRESS 
 });
 
 // Shows payment link and progress indicator (if supported by client)
@@ -305,6 +269,48 @@ installPayMCP(mcp, {
 </Tabs>
 
 See the list of MCP clients and their capabilities here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
+
+
+## Configuring StateStore
+
+By default, PayMCP uses an in-memory StateStore, which does not persist across server restarts. It's highly recommended to use RedisStateStore in production environments.
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from redis.asyncio import from_url
+from paymcp import PayMCP, RedisStateStore
+
+redis = await from_url("redis://localhost:6379")
+PayMCP(
+    mcp,
+    providers=[''' ... ''' ],
+    state_store=RedisStateStore(redis)
+)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { createClient } from "redis";
+import { installPayMCP, RedisStateStore, PaymentFlow } from "paymcp";
+
+const redisClient = createClient({ url: "redis://localhost:6379" });
+await redisClient.connect();
+
+installPayMCP(server, {
+  providers: [ /* ... */ ],
+  paymentFlow: PaymentFlow.TWO_STEP,
+  stateStore: new RedisStateStore(redisClient),
+});
+```
+
+</TabItem>
+</Tabs>
+
+
 
 ## Testing Your Integration
 
@@ -323,7 +329,7 @@ mcp = FastMCP("Test Server")
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
 @mcp.tool()
-@price(amount=0.01, currency="USD")
+@price(amount=1.00, currency="USD")
 def test_payment_integration(name: str, ctx: Context) -> str:
     """Test payment integration with greeting"""
     return f"Hello, {name}! Payment successful."
@@ -338,8 +344,9 @@ if __name__ == "__main__":
 ```typescript
 // server.ts
 import { FastMCP } from '@mcp/server-fastmcp';
-import { PayMCP, price } from 'paymcp';
+import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
+import { z } from 'zod';
 
 const mcp = new FastMCP("Test Server");
 installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
@@ -349,7 +356,7 @@ mcp.tool(
   {
     description: "Test payment integration with greeting",
     inputSchema: { name: z.string() },
-    price: { amount: 0.01, currency: "USD" },
+    price: { amount: 1.00, currency: "USD" },
   },
   async ({ name }, ctx) => {
     return { content: [{ type: "text", text: `Hello, ${name}! Payment successful.` }] };

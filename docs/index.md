@@ -36,7 +36,7 @@ mcp = FastMCP("AI agent name")
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 
 @mcp.tool()
-@price(amount=0.19, currency="USD")
+@price(amount=1.00, currency="USD")
 def add_numbers(a: int, b: int, ctx: Context) -> int:
     """Add two numbers together"""
     return a + b
@@ -47,9 +47,10 @@ def add_numbers(a: int, b: int, ctx: Context) -> int:
 
 ```typescript
 import { FastMCP } from '@mcp/server-fastmcp';
-import { PayMCP } from 'paymcp';
+import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 import type { Context } from '@mcp/server-fastmcp';
+import { z } from 'zod';
 
 const mcp = new FastMCP("AI agent name");
 
@@ -60,7 +61,7 @@ mcp.tool(
   {
     description: "Add two numbers together",
     inputSchema: { a: z.number(), b: z.number() },
-    price: { amount: 0.19, currency: "USD" },
+    price: { amount: 1.00, currency: "USD" },
   },
   async ({ a, b }, ctx) => {
     return { content: [{ type: "text", text: String(a + b) }] };
@@ -99,22 +100,10 @@ See the list of clients and their capabilities here: [https://modelcontextprotoc
 3. **[Add Pricing](./quickstart#adding-pricing)** - Monetize your tools
 4. **[Test Integration](./quickstart#testing-your-integration)** - Verify everything works
 
-## Example Use Cases
-
-- **[Paid Image Generator](./examples/paid-image-generator)** - Charge per image generation
-- **[Premium Q&A Bot](./examples/premium-qa-bot)** - Freemium model with paid premium features
-
-## Architecture
-
-PayMCP sits between your MCP tools and payment providers, handling:
-
-- Payment initiation and confirmation
-- Provider abstraction and failover
-- Flow management (sync/async)
 
 ## Security Notice
 
-**PayMCP is NOT compatible with STDIO mode deployments in python** where end users download and run MCP servers locally. This would expose your payment provider API keys to end users, creating serious security vulnerabilities.
+**PayMCP is NOT compatible with STDIO mode deployments** where end users download and run MCP servers locally. This would expose your payment provider API keys to end users, creating serious security vulnerabilities.
 
 **PayMCP must be deployed as a hosted service** where:
 - You control the server environment

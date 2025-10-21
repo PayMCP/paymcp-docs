@@ -40,6 +40,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
+import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
@@ -48,43 +49,7 @@ installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
 </TabItem>
 </Tabs>
 
-#### Option 2: Provider Instance
 
-```python
-from paymcp import PayMCP, PaymentFlow
-from paymcp.providers import StripeProvider
-
-stripe_provider = StripeProvider(
-    apiKey="sk_test_51...",
-    success_url="https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-    cancel_url="https://yourapp.com/cancel"
-)
-
-PayMCP(
-    mcp,
-    providers={"stripe": stripe_provider},
-    payment_flow=PaymentFlow.TWO_STEP
-)
-```
-
-#### Option 3: List of Instances
-
-```python
-from paymcp import PayMCP, PaymentFlow
-from paymcp.providers import StripeProvider
-
-PayMCP(
-    mcp,
-    providers=[
-        StripeProvider(
-            apiKey="sk_test_51...",
-            success_url="https://yourapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://yourapp.com/cancel"
-        )
-    ],
-    payment_flow=PaymentFlow.TWO_STEP
-)
-```
 
 ### 3. Test Your Integration
 
