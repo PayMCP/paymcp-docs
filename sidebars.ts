@@ -28,8 +28,6 @@ const sidebars: SidebarsConfig = {
           label: 'Examples',
           items: [
             'examples/paid-image-generator',
-            'examples/premium-qa-bot',
-            'examples/subscription-tool',
           ],
         },
         'troubleshooting',

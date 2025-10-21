@@ -1,23 +1,228 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
 
-.heroBanner {
-  padding: 4rem 0;
+.hero {
+  padding: 8rem 0 6rem;
+  background: radial-gradient(circle at top right, rgba(99, 91, 255, 0.2), transparent 55%),
+    linear-gradient(135deg, rgba(0, 82, 255, 0.08), rgba(0, 184, 100, 0.08));
+}
+
+.heroContent {
+  max-width: 900px;
+  margin: 0 auto;
   text-align: center;
-  position: relative;
-  overflow: hidden;
+  color: var(--ifm-font-color-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-radius: 999px;
+  background: rgba(99, 91, 255, 0.12);
+  color: #4437ff;
 }
 
-.buttons {
+.heroContent h1 {
+  font-size: clamp(2.75rem, 5vw, 3.5rem);
+}
+
+.heroSubtitle {
+  margin: 0;
+  font-size: 1.25rem;
+  color: rgba(17, 24, 39, 0.7);
+}
+
+:global(html[data-theme='dark']) .heroSubtitle {
+  color: rgba(229, 231, 235, 0.85);
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.heroProviders {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.heroProvidersLabel {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(17, 24, 39, 0.55);
+}
+
+:global(html[data-theme='dark']) .heroProvidersLabel {
+  color: rgba(229, 231, 235, 0.65);
+}
+
+.heroProvidersGrid {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.providerLogo {
+  width: 120px;
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.featuresSection {
+  padding: 4rem 0;
+  background: rgba(247, 248, 255, 0.8);
+}
+
+:global(html[data-theme='dark']) .featuresSection {
+  background: rgba(17, 24, 39, 0.6);
+}
+
+.featuresHeading {
+  max-width: 640px;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+}
+
+.featuresHeading h2 {
+  margin-bottom: 1rem;
+  font-size: clamp(2rem, 3.5vw, 2.5rem);
+}
+
+.featuresHeading p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+.featuresGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.featureCard {
+  padding: 2rem 1.75rem;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(99, 91, 255, 0.08);
+  box-shadow: 0 20px 40px -24px rgba(17, 24, 39, 0.2);
+  text-align: left;
+}
+
+.featureCard p {
+  margin: 0;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+:global(html[data-theme='dark']) .featureCard {
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid rgba(99, 91, 255, 0.2);
+  box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.6);
+}
+
+:global(html[data-theme='dark']) .featureCard p {
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.featureCard h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.featureCard p {
+  margin: 0;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+.finalCtaSection {
+  padding: 3.5rem 0 4rem;
+}
+
+.finalCtaCard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem;
+  text-align: center;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #0a47ff, #00b864);
+  color: #fff;
+  box-shadow: 0 24px 48px -20px rgba(10, 71, 255, 0.45);
+}
+
+.finalCtaCard h2 {
+  margin-bottom: 1rem;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+}
+
+.finalCtaCard p {
+  margin: 0 auto 2rem;
+  max-width: 560px;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+@media screen and (max-width: 996px) {
+  .hero {
+    padding: 6rem 0 4.5rem;
+  }
+
+  .heroContent {
+    text-align: left;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .heroProvidersGrid {
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .featuresGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finalCtaCard {
+    padding: 2.5rem 2rem;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .heroContent {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .heroProvidersGrid {
+    justify-content: center;
+    gap: 0.85rem;
+  }
+
+  .featuresGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .finalCtaCard {
+    padding: 2.25rem 1.75rem;
+  }
 }
