@@ -38,7 +38,7 @@ def generate_image(prompt: str, ctx: Context) -> str:
 ```typescript
 import { StripeProvider } from 'paymcp/providers';
 
-installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
 mcp.tool(
   "generate_image",

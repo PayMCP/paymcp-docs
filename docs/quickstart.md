@@ -84,7 +84,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -200,7 +200,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 
 ```typescript
 installPayMCP(mcp, { 
-    providers: [StripeProvider({ apiKey: "sk_test_..." })],
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
     paymentFlow: PaymentFlow.TWO_STEP
 });
 ```
@@ -227,7 +227,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 
 ```typescript
 installPayMCP(mcp, { 
-    providers: [StripeProvider({ apiKey: "sk_test_..." })],
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
     paymentFlow: PaymentFlow.ELICITATION 
 });
 
@@ -257,7 +257,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 
 ```typescript
 installPayMCP(mcp, { 
-    providers: [StripeProvider({ apiKey: "sk_test_..." })],
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
     paymentFlow: PaymentFlow.PROGRESS 
 });
 
@@ -349,7 +349,7 @@ import { StripeProvider } from 'paymcp/providers';
 import { z } from 'zod';
 
 const mcp = new FastMCP("Test Server");
-installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
 mcp.tool(
   "test_payment_integration",

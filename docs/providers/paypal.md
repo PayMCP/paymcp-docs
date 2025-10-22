@@ -51,7 +51,7 @@ import { PayPalProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, { 
     providers: [
-        PayPalProvider({
+        new PayPalProvider({
             client_id: "YOUR_CLIENT_ID",
             client_secret: "YOUR_CLIENT_SECRET",
             sandbox: true

@@ -50,7 +50,7 @@ import { SquareProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, { 
     providers: [
-        SquareProvider({
+        new SquareProvider({
             access_token: "YOUR_ACCESS_TOKEN",
             location_id: "YOUR_LOCATION_ID",
             sandbox: true

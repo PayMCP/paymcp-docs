@@ -45,7 +45,7 @@ PayMCP(mcp, providers=[CoinbaseProvider(api_key="YOUR_API_KEY")])
 ```typescript
 import { CoinbaseProvider } from 'paymcp/providers';
 
-installPayMCP(mcp, { providers: [CoinbaseProvider({ apiKey: "YOUR_API_KEY" })] });
+installPayMCP(mcp, { providers: [new CoinbaseProvider({ apiKey: "YOUR_API_KEY" })] });
 ```
 
 </TabItem>
@@ -104,6 +104,5 @@ providers = {
 - **Coinbase Commerce Docs**: [commerce.coinbase.com/docs](https://commerce.coinbase.com/docs)
 - **PayMCP Issues**: [GitHub Issues](https://github.com/PayMCP/paymcp/issues)
 - **Coinbase Support**: Available in Commerce dashboard
-
 
 

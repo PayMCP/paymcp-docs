@@ -43,7 +43,7 @@ PayMCP(mcp, providers=[WalleotProvider(api_key="sk_test_...")])
 import { installPayMCP } from 'paymcp';
 import { WalleotProvider } from 'paymcp/providers';
 
-installPayMCP(mcp, { providers: [WalleotProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new WalleotProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
