@@ -71,7 +71,7 @@ providers = [StripeProvider(apiKey="sk_test_...")]
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-providers = [StripeProvider({ apiKey: "sk_test_..." })];
+providers = [new StripeProvider({ apiKey: "sk_test_..." })];
 ```
 
 </TabItem>
@@ -106,7 +106,7 @@ import { installPayMCP, PaymentFlow } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, {
-    providers: [StripeProvider({ apiKey: "sk_test_..." })],
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
     paymentFlow: PaymentFlow.TWO_STEP
 });
 ```
@@ -220,7 +220,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
-installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>
@@ -273,7 +273,7 @@ import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, {
     providers: {
-        "stripe": StripeProvider({ apiKey: "sk_test_..." })
+        "stripe": new StripeProvider({ apiKey: "sk_test_..." })
     }
 });
 ```
@@ -419,7 +419,7 @@ providers = [StripeProvider(apiKey="sk_test_...")]
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-providers = [StripeProvider({ apiKey: "sk_test_..." })];
+providers = [new StripeProvider({ apiKey: "sk_test_..." })];
 ```
 
 </TabItem>
@@ -477,7 +477,7 @@ providers = [PayPalProvider(client_id="...", client_secret="...", sandbox=True)]
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-providers = [PayPalProvider({ client_id: "...", client_secret: "...", sandbox: true })];
+providers = [new PayPalProvider({ client_id: "...", client_secret: "...", sandbox: true })];
 ```
 
 </TabItem>
@@ -588,7 +588,7 @@ providers = [CoinbaseProvider(api_key="...")]
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-providers = [CoinbaseProvider({ api_key: "..." })];
+providers = [new CoinbaseProvider({ api_key: "..." })];
 ```
 
 </TabItem>

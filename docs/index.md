@@ -54,7 +54,7 @@ import { z } from 'zod';
 
 const mcp = new FastMCP("AI agent name");
 
-installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
 mcp.tool(
   "add_numbers",

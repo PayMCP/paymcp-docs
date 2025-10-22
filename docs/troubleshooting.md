@@ -173,7 +173,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")])
 ```typescript
 // ✅ Correct
 import { StripeProvider } from 'paymcp/providers';
-installPayMCP(mcp, { providers: [StripeProvider({ apiKey: "sk_test_..." })] });
+installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 ```
 
 </TabItem>

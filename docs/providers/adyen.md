@@ -51,7 +51,7 @@ import { AdyenProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, { 
     providers: [
-        AdyenProvider({
+        new AdyenProvider({
             api_key: "YOUR_API_KEY",
             merchant_account: "YOUR_MERCHANT_ACCOUNT",
             sandbox: true
@@ -149,4 +149,3 @@ providers = [
 - **Adyen Documentation**: [docs.adyen.com](https://docs.adyen.com)
 - **PayMCP Issues**: [GitHub Issues](https://github.com/PayMCP/paymcp/issues)  
 - **Adyen Support**: 24/7 technical support via Customer Area
-
