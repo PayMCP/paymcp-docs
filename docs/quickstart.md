@@ -182,7 +182,7 @@ mcp.tool(
 
 ## Payment Flows
 
-Choose the payment flow that works best for your use case:
+Choose the payment flow (TWO_STEP, ELICITATION, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
 
 ### TWO_STEP (Default - Most Compatible)
 
@@ -263,6 +263,38 @@ installPayMCP(mcp, {
 
 // Shows payment link and progress indicator (if supported by client)
 // Automatically proceeds when payment is received
+```
+
+</TabItem>
+</Tabs>
+
+### DYNAMIC_TOOLS (Guided Tool Lists)
+
+For clients that support dynamic tool lists and `listChanged` notifications:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(
+    mcp,
+    providers=[StripeProvider(apiKey="sk_test_...")],
+    payment_flow=PaymentFlow.DYNAMIC_TOOLS
+)
+
+# Temporarily hides/shows tools to steer the next valid action
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, {
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    paymentFlow: PaymentFlow.DYNAMIC_TOOLS
+});
+
+// Temporarily hides/shows tools to steer the next valid action
 ```
 
 </TabItem>
