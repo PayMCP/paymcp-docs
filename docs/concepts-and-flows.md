@@ -13,6 +13,8 @@ PayMCP provides flexible payment flows to handle different interaction patterns 
 
 The `payment_flow` parameter determines how users interact with your paid tools. Each flow is optimized for different scenarios.
 
+Available flows include `TWO_STEP`, `ELICITATION`, `PROGRESS`, and `DYNAMIC_TOOLS`.
+
 ### TWO_STEP Flow
 
 The default flow splits your tool execution into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don't need to change your function code — just write your tool as usual, and PayMCP will handle the split automatically.
@@ -216,6 +218,79 @@ MCP server: Executes generate_image() → Returns image URL
 - Holds the tool execution thread
 - Timeout duration depends on the client
 - Requires progress reporting support that can display progress messages (not just percentages)
+
+
+
+### DYNAMIC_TOOLS Flow
+
+The dynamic-tools flow changes the set of tools that are visible at specific points in the interaction. PayMCP temporarily exposes only the next valid action (e.g., temporarily expose `confirm_payment`, hide `generate_image`, and send a `listChanged` notification) so the LLM is strongly guided to proceed correctly. 
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp.providers import StripeProvider
+
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.DYNAMIC_TOOLS)
+
+@mcp.tool()
+@price(amount=0.75, currency="USD")
+def generate_image(prompt: str, ctx: Context) -> str:
+    """Generate an image based on user prompt"""
+    return f"Image generated for: {prompt}"
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { StripeProvider } from 'paymcp/providers';
+
+installPayMCP(mcp, {
+  providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+  payment_flow: PaymentFlow.DYNAMIC_TOOLS
+});
+
+mcp.tool(
+  "generate_image",
+  {
+    description: "Generate an image based on user prompt",
+    inputSchema: { prompt: z.string() },
+    price: { amount: 0.75, currency: "USD" },
+  },
+  async ({ prompt }, ctx) => {
+    return { content: [{ type: "text", text: `Image generated for: ${prompt}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
+![DYNAMIC_TOOLS Flow Diagram](/diagrams/DYNAMIC_TOOLS.drawio.svg)
+
+Under the hood, PayMCP dynamically adjusts which tools are visible. After the first call to your tool returns a payment link, PayMCP hides `generate_image`, exposes the confirmation tool `confirm_payment`, and sends a `listChanged` notification. Once payment is confirmed, `confirm_payment` executes your original function.
+
+**User Experience:**
+```
+User: "Draw a dog"
+LLM: tool call → generate_image("a dog")
+MCP server: Returns payment link, hides `generate_image`, exposes `confirm_payment`, and sends `listChanged` notification
+User: [Pays]
+LLM: tool call → confirm_generate_image(payment_id)
+MCP server: Executes original generate_image() → Returns result, hides `confirm_payment`, exposes `generate_image` and sends `listChanged` notification
+```
+
+**Advantages:**
+- Strong steering by constraining the next valid action.
+- Works without elicitation/progress support in the client.
+- Clear, stepwise flow.
+
+**Disadvantages:**
+- Experimental; depends on how clients handle dynamic tool lists.
+- Temporarily increases the number of visible tools.
+- Requires client support for `listChanged` notifications.
+- Caching and "flicker" (tools appear/disappear) can confuse users and models.
 
 
 ## Next Steps

@@ -126,6 +126,7 @@ class PaymentFlow(str, Enum):
     TWO_STEP = "two_step"
     ELICITATION = "elicitation" 
     PROGRESS = "progress"
+    DYNAMIC_TOOLS = "dynamic_tools"
 ```
 
 </TabItem>
@@ -135,7 +136,8 @@ class PaymentFlow(str, Enum):
 enum PaymentFlow {
     TWO_STEP = "two_step",
     ELICITATION = "elicitation",
-    PROGRESS = "progress"
+    PROGRESS = "progress",
+    DYNAMIC_TOOLS = "dynamic_tools"
 }
 ```
 
@@ -148,7 +150,8 @@ enum PaymentFlow {
 |------|-------------|----------|
 | `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
 | `ELICITATION` | Payment link during execution | Real-time interactions |
-| `PROGRESS` | Experimental auto-checking of payment status | Real-time interactions  |
+| `PROGRESS` | Experimental auto-checking of payment status | Real-time interactions |
+| `DYNAMIC_TOOLS` | Dynamically expose the next valid tool action | Clients with `listChanged` support |
 
 For more details about payment flow concepts, see [Concepts and Flows](./concepts-and-flows).
 

@@ -252,6 +252,17 @@ installPayMCP(mcp, {
 </TabItem>
 </Tabs>
 
+### DYNAMIC_TOOLS Tool List Not Updating
+
+**Error**: Confirmation tool never appears or tool list remains unchanged
+
+**Cause**: MCP client doesn't send `listChanged` notifications or caches the tool list
+
+**Solutions**:
+- Confirm your MCP client supports dynamic tool lists before using `PaymentFlow.DYNAMIC_TOOLS`
+- Fall back to `PaymentFlow.TWO_STEP` if the client ignores `listChanged` updates
+- Restart the client session to clear cached tool metadata after enabling dynamic tools
+
 ## Frequently Asked Questions
 
 **Q: How do I deploy PayMCP securely?**
