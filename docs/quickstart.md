@@ -180,9 +180,9 @@ mcp.tool(
 </Tabs>
 
 
-## Payment Flows
+## Coordination Modes
 
-Choose the payment flow (TWO_STEP, ELICITATION, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
+Choose the mode (TWO_STEP, RESUBMIT, ELICITATION, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
 
 ### TWO_STEP (Default - Most Compatible)
 
@@ -192,7 +192,7 @@ Best for most applications. Splits tool execution into two steps:
 <TabItem value="python" label="Python">
 
 ```python
-PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.TWO_STEP)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.TWO_STEP)
 ```
 
 </TabItem>
@@ -201,12 +201,41 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 ```typescript
 installPayMCP(mcp, { 
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    paymentFlow: PaymentFlow.TWO_STEP
+    mode: Mode.TWO_STEP
 });
 ```
 
 </TabItem>
 </Tabs>
+
+### RESUBMIT (Retry-after-error)
+
+Adds an optional `payment_id` to the original tool signature.
+
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.RESUBMIT)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, { 
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    mode: Mode.RESUBMIT 
+});
+```
+
+</TabItem>
+</Tabs>
+
+**Call sequence**
+1. First call: PayMCP invokes the tool without a `payment_id`, responds with HTTP 402 Payment Required containing a `payment_url` plus `payment_id`, and instructs the client to retry.
+2. Second call: The client calls the same tool again with the returned `payment_id`; PayMCP validates payment server-side and runs your original tool logic if paid.
 
 ### ELICITATION (Interactive)
 
@@ -216,7 +245,7 @@ For real-time interactions:
 <TabItem value="python" label="Python">
 
 ```python
-PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.ELICITATION)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.ELICITATION)
 
 # Shows payment link immediately when tool is called (if supported by client)
 # Waits for payment confirmation before proceeding
@@ -228,7 +257,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 ```typescript
 installPayMCP(mcp, { 
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    paymentFlow: PaymentFlow.ELICITATION 
+    mode: Mode.ELICITATION 
 });
 
 // Shows payment link immediately when tool is called (if supported by client)
@@ -246,7 +275,7 @@ For experimental auto-checking of payment status:
 <TabItem value="python" label="Python">
 
 ```python
-PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=PaymentFlow.PROGRESS)
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.PROGRESS)
 
 # Shows payment link and progress indicator (if supported by client)
 # Automatically proceeds when payment is received
@@ -258,7 +287,7 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], payment_flow=Payme
 ```typescript
 installPayMCP(mcp, { 
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    paymentFlow: PaymentFlow.PROGRESS 
+    mode: Mode.PROGRESS 
 });
 
 // Shows payment link and progress indicator (if supported by client)
@@ -279,7 +308,7 @@ For clients that support dynamic tool lists and `listChanged` notifications:
 PayMCP(
     mcp,
     providers=[StripeProvider(apiKey="sk_test_...")],
-    payment_flow=PaymentFlow.DYNAMIC_TOOLS
+    mode=Mode.DYNAMIC_TOOLS
 )
 
 # Temporarily hides/shows tools to steer the next valid action
@@ -291,7 +320,7 @@ PayMCP(
 ```typescript
 installPayMCP(mcp, {
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    paymentFlow: PaymentFlow.DYNAMIC_TOOLS
+    mode: Mode.DYNAMIC_TOOLS
 });
 
 // Temporarily hides/shows tools to steer the next valid action
@@ -327,14 +356,14 @@ PayMCP(
 
 ```typescript
 import { createClient } from "redis";
-import { installPayMCP, RedisStateStore, PaymentFlow } from "paymcp";
+import { installPayMCP, RedisStateStore, Mode } from "paymcp";
 
 const redisClient = createClient({ url: "redis://localhost:6379" });
 await redisClient.connect();
 
 installPayMCP(server, {
   providers: [ /* ... */ ],
-  paymentFlow: PaymentFlow.TWO_STEP,
+  mode: Mode.TWO_STEP,
   stateStore: new RedisStateStore(redisClient),
 });
 ```
@@ -430,7 +459,7 @@ For testing, we recommend using the [MCP Inspector](https://github.com/modelcont
 
 ### Explore More:
 
-- **[Payment Flows](./concepts-and-flows)** - Learn about different payment patterns
+- **[Coordination Modes](./concepts-and-flows)** - Learn about different coordination modes
 - **[Provider Guides](./providers/stripe)** - Provider-specific configuration
 - **[Examples](./examples/paid-image-generator)** - Real-world implementation examples
 

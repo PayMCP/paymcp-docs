@@ -23,7 +23,7 @@ class PayMCP:
         self,
         mcp_instance,
         providers: list = None,
-        payment_flow: PaymentFlow = PaymentFlow.TWO_STEP,
+        mode: Mode = Mode.TWO_STEP,
         state_store = None
     )
 ```
@@ -37,7 +37,7 @@ class PayMCP {
         mcpInstance: FastMCP,
         options: {
             providers: Provider[],
-            paymentFlow?: PaymentFlow,
+            mode?: Mode,
             stateStore?: StateStore;
         }
     )
@@ -53,8 +53,8 @@ class PayMCP {
 |-----------|------|---------|-------------|
 | `mcp_instance` | `FastMCP` | Required | Your MCP server instance |
 | `providers` | `Union[dict, Iterable]` | `{}` | Payment provider configurations (see Provider Configuration section) |
-| `payment_flow` | `PaymentFlow` | `TWO_STEP` | Payment flow strategy |
-| `state_store` | `StateStore` | `InMemoryStateStore` | State Store for TWO_STEP flow |
+| `mode` | `Mode` | `TWO_STEP` | Coordination mode strategy |
+| `state_store` | `StateStore` | `InMemoryStateStore` | State Store for TWO_STEP mode |
 
 #### Provider Configuration
 
@@ -88,13 +88,13 @@ import TabItem from '@theme/TabItem';
 <TabItem value="python" label="Python">
 
 ```python
-from paymcp import PayMCP, PaymentFlow
+from paymcp import PayMCP, Mode
 from paymcp.providers import StripeProvider
 
 PayMCP(
     mcp,
     providers=[StripeProvider(apiKey="sk_test_...")],
-    payment_flow=PaymentFlow.TWO_STEP
+    mode=Mode.TWO_STEP
 )
 ```
 
@@ -102,28 +102,29 @@ PayMCP(
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { installPayMCP, PaymentFlow } from 'paymcp';
+import { installPayMCP, Mode } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, {
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    paymentFlow: PaymentFlow.TWO_STEP
+    mode: Mode.TWO_STEP
 });
 ```
 
 </TabItem>
 </Tabs>
 
-## PaymentFlow
+## Mode
 
-Enum defining available payment flow strategies.
+Enum defining available payment modes.
 
 <Tabs>
 <TabItem value="python" label="Python">
 
 ```python
-class PaymentFlow(str, Enum):
+class Mode(str, Enum):
     TWO_STEP = "two_step"
+    RESUBMIT = "resubmit"
     ELICITATION = "elicitation" 
     PROGRESS = "progress"
     DYNAMIC_TOOLS = "dynamic_tools"
@@ -133,8 +134,9 @@ class PaymentFlow(str, Enum):
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-enum PaymentFlow {
+enum Mode {
     TWO_STEP = "two_step",
+    RESUBMIT = "resubmit",
     ELICITATION = "elicitation",
     PROGRESS = "progress",
     DYNAMIC_TOOLS = "dynamic_tools"
@@ -144,21 +146,26 @@ enum PaymentFlow {
 </TabItem>
 </Tabs>
 
-#### Flow Types
+#### Coordination Modes
 
-| Flow | Description | Best For |
+| Mode | Description | Best For |
 |------|-------------|----------|
 | `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
+| `RESUBMIT` | First call returns HTTP 402 with `payment_url` + `payment_id`; second call retries with the ID | Tool retries where the client handles user payment completion |
 | `ELICITATION` | Payment link during execution | Real-time interactions |
 | `PROGRESS` | Experimental auto-checking of payment status | Real-time interactions |
 | `DYNAMIC_TOOLS` | Dynamically expose the next valid tool action | Clients with `listChanged` support |
 
-For more details about payment flow concepts, see [Concepts and Flows](./concepts-and-flows).
+For more details about coordination mode concepts, see [Coordination Modes](./concepts-and-flows).
+
+**RESUBMIT specifics**
+1. First call: PayMCP invokes your tool without a `payment_id`, responds with HTTP 402 Payment Required that includes a `payment_url` and `payment_id`, and instructs the caller to retry after payment.
+2. Second call: The caller runs the same tool again with the provided `payment_id`; PayMCP verifies payment server-side and executes your original tool logic if the payment succeeded.
 
 
 ## StateStore
 
-By default, when using the `TWO_STEP` payment flow, PayMCP stores pending tool arguments in memory using a process-local `Map`. This is not durable and will not work across server restarts or multiple server instances (no horizontal scaling).
+By default, when using the `TWO_STEP` mode, PayMCP stores pending tool arguments in memory using a process-local `Map`. This is not durable and will not work across server restarts or multiple server instances (no horizontal scaling).
 
 To enable durable and scalable state storage, you can provide a custom StateStore implementation. PayMCP includes a built-in RedisStateStore, which works with any Redis-compatible client.
 
@@ -184,14 +191,14 @@ PayMCP(
 
 ```typescript
 import { createClient } from "redis";
-import { installPayMCP, RedisStateStore, PaymentFlow } from "paymcp";
+import { installPayMCP, RedisStateStore, Mode } from "paymcp";
 
 const redisClient = createClient({ url: "redis://localhost:6379" });
 await redisClient.connect();
 
 installPayMCP(server, {
   providers: { /* ... */ },
-  paymentFlow: PaymentFlow.TWO_STEP,
+  mode: Mode.TWO_STEP,
   stateStore: new RedisStateStore(redisClient),
 });
 ```
@@ -624,8 +631,8 @@ def my_tool(input: str, ctx: Context) -> str:
 
 The `Context` parameter provides:
 - User identification for payment tracking
-- Progress reporting capabilities (PROGRESS flow)
-- Elicitation support (ELICITATION flow)
+- Progress reporting capabilities (PROGRESS mode)
+- Elicitation support (ELICITATION mode)
 - Tool execution metadata
 
 ## Error Handling
@@ -647,7 +654,7 @@ PayMCP handles various error scenarios automatically:
 |------------|-------------|----------|
 | Invalid API key | Wrong or expired key | Check provider dashboard |
 | Missing provider | Provider not configured | Add provider to configuration |
-| Invalid flow | Unsupported payment flow | Use supported flow type |
+| Invalid mode | Unsupported payment mode | Use supported mode |
 
 ### Tool Errors
 
