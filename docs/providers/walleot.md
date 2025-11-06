@@ -12,6 +12,7 @@ Walleot enables seamless payments with pre-purchased credits and automatic payme
 
 - **Pre-purchased Credits** - Users buy credits in advance for frictionless payments
 - **Auto Payments** - Automatic payment processing for approved amounts
+- **Promocodes** – Define promocodes to offer discounts or fully cover tool costs, allowing end users to access features for free or at reduced prices
 
 ## Quick Setup
 

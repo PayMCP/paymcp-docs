@@ -84,7 +84,7 @@ function FeaturesSection(): ReactElement {
         <div className={styles.featuresHeading}>
           <h3>
             Focus on building transformative agent experiences while PayMCP
-            handles payment flows and provider orchestration.
+            handles coordination modes and provider orchestration.
           </h3>
         </div>
         <div className={styles.featuresGrid}>

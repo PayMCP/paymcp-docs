@@ -218,7 +218,7 @@ dotenv.config();
 </TabItem>
 </Tabs>
 
-## Payment Flow Issues
+## Coordination Mode Issues
 
 ### ELICITATION Not Working
 
@@ -226,7 +226,7 @@ dotenv.config();
 
 **Cause**: MCP client doesn't support elicitation
 
-**Solution**: Use TWO_STEP flow instead:
+**Solution**: Use the TWO_STEP coordination mode instead:
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -235,7 +235,7 @@ dotenv.config();
 PayMCP(
     mcp,
     providers={...},
-    payment_flow=PaymentFlow.TWO_STEP  # More compatible
+    mode=Mode.TWO_STEP  # More compatible
 )
 ```
 
@@ -245,7 +245,7 @@ PayMCP(
 ```typescript
 installPayMCP(mcp, {
     providers: {...},
-    payment_flow: PaymentFlow.TWO_STEP  // More compatible
+    mode: Mode.TWO_STEP  // More compatible
 });
 ```
 
@@ -259,8 +259,8 @@ installPayMCP(mcp, {
 **Cause**: MCP client doesn't send `listChanged` notifications or caches the tool list
 
 **Solutions**:
-- Confirm your MCP client supports dynamic tool lists before using `PaymentFlow.DYNAMIC_TOOLS`
-- Fall back to `PaymentFlow.TWO_STEP` if the client ignores `listChanged` updates
+- Confirm your MCP client supports dynamic tool lists before using `Mode.DYNAMIC_TOOLS`
+- Fall back to `Mode.TWO_STEP` if the client ignores `listChanged` updates
 - Restart the client session to clear cached tool metadata after enabling dynamic tools
 
 ## Frequently Asked Questions
@@ -297,7 +297,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # PayMCP will log:
 # - Provider API calls and responses
-# - Payment flow decisions
+# - Coordination mode decisions
 # - Error details and stack traces
 ```
 
@@ -310,7 +310,7 @@ process.env.DEBUG = 'paymcp:*';
 
 // PayMCP will log:
 // - Provider API calls and responses
-// - Payment flow decisions
+// - Coordination mode decisions
 // - Error details and stack traces
 ```
 
@@ -329,7 +329,7 @@ When reporting issues, include:
 1. **PayMCP version**: `paymcp.__version__`
 2. **MCP version**: `mcp.__version__` 
 3. **Provider**: Which provider you're using
-4. **Payment flow**: TWO_STEP, ELICITATION, etc.
+4. **Mode**: TWO_STEP, RESUBMIT, ELICITATION, etc.
 5. **Error messages**: Full error text and stack traces
 6. **Code sample**: Minimal reproducible example
 
