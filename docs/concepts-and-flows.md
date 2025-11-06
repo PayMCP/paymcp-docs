@@ -130,7 +130,12 @@ mcp.tool(
 </TabItem>
 </Tabs>
 
-Under the hood, PayMCP adds an optional `payment_id` parameter to your tool and handles the 402 Payment Required response automatically. On the first call, it returns a payment link and instructs the client to retry with the provided `payment_id`. On the second call, PayMCP verifies payment and executes your original function.
+Under the hood, PayMCP adds an optional `payment_id` parameter to your tool and handles the 402 Payment Required response automatically. On the first call (without payment_id), it returns a payment link and instructs the client to retry with the provided `payment_id`. On the second call (with payment_id), PayMCP verifies payment and executes your original function.
+
+> **Client behavior requirements:** Clients should either handle the **402** by itself (display the payment URL, wait for confirmation, then retry with the `payment_id`) **or** forward the **full 402 response body** (including the payment URL and `payment_id`) to the LLM. Forwarding a 402 without its body prevents the user from seeing the payment link and stalls the flow.
+
+
+![RESUBMIT Diagram](/diagrams/RESUBMIT.drawio.svg)
 
 **User Experience:**
 ```
