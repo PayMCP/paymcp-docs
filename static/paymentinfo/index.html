@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Payment Status</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, #f8fbff, #eef7ff 45%, #f5faff);
+      color: #0f1c2e;
+      padding: 16px;
+    }
+    .card {
+      width: min(420px, 100%);
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 16px;
+      padding: 24px 28px;
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(15, 28, 46, 0.07);
+    }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { margin: 0 0 12px; line-height: 1.6; font-size: 15px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.01em;
+    }
+    .success { background: #e7f7ef; color: #0a6c3d; border: 1px solid #b6e5c9; }
+    .pending { background: #fff4e6; color: #a05a00; border: 1px solid #ffd9ad; }
+    .canceled { background: #fcebef; color: #a1223f; border: 1px solid #f8c3d0; }
+    .failed { background: #f7e7e7; color: #8f1b1b; border: 1px solid #e6b3b3; }
+    .muted { color: #4f5f73; font-size: 13px; margin-top: 4px; }
+    dl { margin: 12px 0 0; }
+    dt { font-weight: 600; margin-top: 8px; }
+    dd { margin: 2px 0 0 0; word-break: break-word; color: #1f2a3a; }
+    code { background: #f2f4f8; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <div id="statusPill" class="pill pending">Checking status…</div>
+    <h1 id="title">Checking payment</h1>
+    <p id="message">We’re reading the return parameters from your payment provider.</p>
+    <dl id="details"></dl>
+  </main>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+
+      // Common return params:
+      // - Adyen: resultCode=Authorised|Cancelled|Error|Refused|Pending, payload, merchantReference, pspReference
+      // - Square: transactionId or paymentId, orderId, checkoutId, status (Completed|Canceled|Failed|Pending)
+      // - Generic: status, success=true|false
+      const rawStatus = (
+        params.get('status') ||
+        params.get('resultCode') ||
+        params.get('success') ||
+        ''
+      ).toLowerCase();
+      const hasAnyId = Boolean(
+        params.get('paymentId') ||
+        params.get('pspReference') ||
+        params.get('transactionId') ||
+        params.get('orderId') ||
+        params.get('merchantReference') ||
+        params.get('checkoutId') ||
+        params.get('sessionId') ||
+        params.get('payload')
+      );
+
+      const successValues = ['authorised', 'authorized', 'success', 'succeeded', 'completed', 'paid', 'true'];
+      const pendingValues = ['pending', 'processing', 'in_progress', 'in-progress'];
+      const canceledValues = ['cancelled', 'canceled'];
+
+      let state = 'pending';
+      if (successValues.includes(rawStatus)) state = 'success';
+      else if (pendingValues.includes(rawStatus)) state = 'pending';
+      else if (canceledValues.includes(rawStatus)) state = 'canceled';
+      else if (rawStatus) state = 'failed';
+      else if (hasAnyId) state = 'pending'; // IDs but no status → treat as pending (Square-style).
+
+      const titles = {
+        success: 'Payment successful',
+        pending: 'Payment pending',
+        canceled: 'Payment canceled',
+        failed: 'Payment failed',
+      };
+
+      const messages = {
+        success: 'You can close this window. Your payment was confirmed.',
+        pending: 'Your payment is still processing. You can close this window; the provider will finalize shortly.',
+        canceled: 'Payment was canceled. You can close this window.',
+        failed: 'Payment could not be completed. You can close this window and retry if needed.',
+      };
+
+      const pill = document.getElementById('statusPill');
+      pill.className = `pill ${state}`;
+      pill.textContent = titles[state];
+
+      document.getElementById('title').textContent = titles[state];
+      document.getElementById('message').textContent = messages[state];
+
+      const details = document.getElementById('details');
+      const fields = [
+        ['Status', params.get('status') || params.get('resultCode') || params.get('success')],
+        ['Payment ID', params.get('paymentId') || params.get('pspReference') || params.get('transactionId')],
+        ['Order ID', params.get('orderId') || params.get('merchantReference')],
+        ['Checkout ID', params.get('checkoutId') || params.get('sessionId')],
+        ['Payload', params.get('payload')],
+      ];
+
+      fields.forEach(([label, value]) => {
+        if (!value) return;
+        const dt = document.createElement('dt');
+        dt.textContent = label;
+        const dd = document.createElement('dd');
+        dd.textContent = value;
+        details.appendChild(dt);
+        details.appendChild(dd);
+      });
+
+      if (!details.children.length) {
+        const dd = document.createElement('dd');
+        dd.className = 'muted';
+        dd.textContent = 'No return parameters were provided.';
+        details.appendChild(dd);
+      }
+    })();
+  </script>
+</body>
+</html>
