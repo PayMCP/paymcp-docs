@@ -63,6 +63,42 @@ def test_stripe_payment(message: str, ctx: Context) -> str:
 
 Test with Stripe's test card: `4242 4242 4242 4242`
 
+## Subscriptions
+
+You can also gate tools behind active Stripe subscriptions:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp import subscription
+
+@mcp.tool()
+@subscription(plan="price_pro_monthly")  # or a list of accepted plan IDs
+async def generate_report(ctx: Context) -> str:
+    return "Your report"
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "generate_report",
+  {
+    title: "Generate report",
+    description: "Requires an active Pro subscription.",
+    subscription: { plan: "price_pro_monthly" }, // or an array of accepted plan ids
+  },
+  async (extra) => {
+    return { content: [{ type: "text", text: "Your report" }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
 
 ## Support
 

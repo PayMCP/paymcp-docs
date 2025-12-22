@@ -27,7 +27,8 @@ const sidebars: SidebarsConfig = {
           type: 'category',
           label: 'Examples',
           items: [
-            'examples/paid-image-generator',
+            'examples/pay-per-request',
+            'examples/subscription-demo',
           ],
         },
         'troubleshooting',

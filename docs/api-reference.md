@@ -23,7 +23,7 @@ class PayMCP:
         self,
         mcp_instance,
         providers: list = None,
-        mode: Mode = Mode.TWO_STEP,
+        mode: Mode = Mode.AUTO,
         state_store = None
     )
 ```
@@ -53,7 +53,7 @@ class PayMCP {
 |-----------|------|---------|-------------|
 | `mcp_instance` | `FastMCP` | Required | Your MCP server instance |
 | `providers` | `Union[dict, Iterable]` | `{}` | Payment provider configurations (see Provider Configuration section) |
-| `mode` | `Mode` | `TWO_STEP` | Coordination mode strategy |
+| `mode` | `Mode` | `AUTO` | Coordination mode strategy |
 | `state_store` | `StateStore` | `InMemoryStateStore` | State Store for TWO_STEP mode |
 
 #### Provider Configuration
@@ -94,7 +94,7 @@ from paymcp.providers import StripeProvider
 PayMCP(
     mcp,
     providers=[StripeProvider(apiKey="sk_test_...")],
-    mode=Mode.TWO_STEP
+    mode=Mode.AUTO
 )
 ```
 
@@ -107,7 +107,7 @@ import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, {
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    mode: Mode.TWO_STEP
+    mode: Mode.AUTO
 });
 ```
 
@@ -123,6 +123,7 @@ Enum defining available payment modes.
 
 ```python
 class Mode(str, Enum):
+    AUTO = "auto"
     TWO_STEP = "two_step"
     RESUBMIT = "resubmit"
     ELICITATION = "elicitation" 
@@ -135,6 +136,7 @@ class Mode(str, Enum):
 
 ```typescript
 enum Mode {
+    AUTO = "auto",
     TWO_STEP = "two_step",
     RESUBMIT = "resubmit",
     ELICITATION = "elicitation",
@@ -150,6 +152,7 @@ enum Mode {
 
 | Mode | Description | Best For |
 |------|-------------|----------|
+| `AUTO` | Detects client capabilities; uses `ELICITATION` if supported, otherwise falls back to `RESUBMIT` | Default, best balance of UX and compatibility |
 | `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
 | `RESUBMIT` | First call returns HTTP 402 with `payment_url` + `payment_id`; second call retries with the ID | Tool retries where the client handles user payment completion |
 | `ELICITATION` | Payment link during execution | Real-time interactions |
@@ -321,6 +324,29 @@ class MyProvider(BasePaymentProvider):
     def get_payment_status(self, payment_id: str) -> str:
         """Return payment status: 'paid', 'pending', 'failed', or 'cancelled'"""
         return "paid"
+
+    # Optional: subscriptions
+    async def get_subscriptions(self, user_id: str, email: str | None = None) -> dict:
+        return {
+            "current_subscriptions": [],  # list of current user subscriptions
+            "available_subscriptions": [],  # list of available plans
+        }
+
+    # Optional: subscriptions
+    async def start_subscription(self, plan_id: str, user_id: str, email: str | None = None) -> dict:
+        return {
+            "message": "Subscription created",
+            "sessionId": "SESSION_ID",
+            "checkoutUrl": "https://example.com/checkout",
+        }
+
+    # Optional: subscriptions
+    async def cancel_subscription(self, subscription_id: str, user_id: str, email: str | None = None) -> dict:
+        return {
+            "message": "Subscription cancellation scheduled",
+            "canceled": True,
+            "endDate": "2025-12-31T00:00:00Z",
+        }
 ```
 
 </TabItem>
@@ -343,6 +369,32 @@ class MyProvider extends BasePaymentProvider {
     getPaymentStatus(paymentId: string): string {
         // Return payment status: 'paid', 'pending', 'failed', or 'cancelled'
         return "paid";
+    }
+
+    // Optional: subscriptions
+    async getSubscriptions(userId: string, email?: string) {
+        return {
+            current_subscriptions: [], // list of current user subscriptions
+            available_subscriptions: [], // list of available plans
+        };
+    }
+
+    // Optional: subscriptions
+    async startSubscription(planId: string, userId: string, email?: string) {
+        return {
+            message: "Subscription created",
+            sessionId: "SESSION_ID",
+            checkoutUrl: "https://example.com/checkout",
+        };
+    }
+
+    // Optional: subscriptions
+    async cancelSubscription(subscriptionId: string, userId: string, email?: string) {
+        return {
+            message: "Subscription cancellation scheduled",
+            canceled: true,
+            endDate: "2025-12-31T00:00:00Z",
+        };
     }
 }
 ```
@@ -407,6 +459,68 @@ mcp.tool(
   },
   async ({ input }, ctx) => {
     return { content: [{ type: "text", text: `Report: ${input}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
+### @subscription
+
+Decorator to gate tools behind an active subscription
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+def subscription(plan: str | list[str])
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+// In registerTool options:
+subscription: { plan: string | string[] }
+```
+
+</TabItem>
+</Tabs>
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `plan` | `str \| list[str]` | Required | Accepted plan IDs from your provider |
+
+#### Example
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp import subscription
+
+@mcp.tool()
+@subscription(plan="price_pro_monthly")  # or a list of accepted plan IDs
+async def generate_report(ctx: Context) -> str:
+    return "Your report"
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "generate_report",
+  {
+    title: "Generate report",
+    description: "Requires an active Pro subscription.",
+    subscription: { plan: "price_pro_monthly" }, // or an array of accepted plan ids
+  },
+  async (extra) => {
+    return { content: [{ type: "text", text: "Your report" }] };
   }
 );
 ```

@@ -180,13 +180,73 @@ mcp.tool(
 </Tabs>
 
 
+## Subscriptions
+
+Gate tools behind an active subscription instead of pay-by-request.
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp import subscription
+
+@mcp.tool()
+@subscription(plan="price_pro_monthly")  # or a list of accepted plan IDs
+async def generate_report(ctx: Context) -> str:
+    return "Your report"
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "generate_report",
+  {
+    title: "Generate report",
+    description: "Requires an active Pro subscription.",
+    subscription: { plan: "price_pro_monthly" }, // or an array of accepted plan ids
+  },
+  async (extra) => {
+    return { content: [{ type: "text", text: "Your report" }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
 ## Coordination Modes
 
-Choose the mode (TWO_STEP, RESUBMIT, ELICITATION, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
+Choose the mode (AUTO, TWO_STEP, RESUBMIT, ELICITATION, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
 
-### TWO_STEP (Default - Most Compatible)
+### AUTO (Default)
 
-Best for most applications. Splits tool execution into two steps:
+Automatically detects client capabilities: uses `ELICITATION` if supported, otherwise falls back to `RESUBMIT`.
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.AUTO)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, { 
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    mode: Mode.AUTO
+});
+```
+
+</TabItem>
+</Tabs>
+
+### TWO_STEP
+
+Splits tool execution into two steps:
 
 <Tabs>
 <TabItem value="python" label="Python">

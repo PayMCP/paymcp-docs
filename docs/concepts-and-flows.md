@@ -15,11 +15,35 @@ The `mode` parameter determines how clients interact with your paid tools. Each 
 
 > **Note:** In PayMCP v0.4.2, the configuration option `paymentFlow` was renamed to `mode` to better reflect its role. The former name still works for backward compatibility, but new integrations should prefer `mode`.
 
-Available modes include `TWO_STEP`, `RESUBMIT`, `ELICITATION`, `PROGRESS`, and `DYNAMIC_TOOLS`.
+Available modes include `AUTO`, `TWO_STEP`, `RESUBMIT`, `ELICITATION`, `PROGRESS`, and `DYNAMIC_TOOLS`.
+
+### AUTO (Default)
+
+AUTO detects client capabilities and chooses the best flow automatically: it uses `ELICITATION` when supported, otherwise it falls back to `RESUBMIT`.
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.AUTO)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, {
+  providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+  mode: Mode.AUTO
+});
+```
+
+</TabItem>
+</Tabs>
 
 ### TWO_STEP 
 
-The default mode splits your tool execution into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don't need to change your function code — just write your tool as usual, and PayMCP will handle the split automatically.
+The two-step mode splits your tool execution into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don't need to change your function code — just write your tool as usual, and PayMCP will handle the split automatically.
 
 <Tabs>
 <TabItem value="python" label="Python">
