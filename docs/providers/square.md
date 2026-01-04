@@ -79,14 +79,14 @@ def test_square_payment(item: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-mcp.tool(
+mcp.registerTool(
   "test_square_payment",
   {
     description: "Test Square payment integration",
     inputSchema: { item: z.string() },
-    price: { amount: 1.50, currency: "USD" },
+    _meta: { price: { amount: 1.50, currency: "USD" } },
   },
-  async ({ item }, ctx) => {
+  async ({ item }, extra) => {
     return { content: [{ type: "text", text: `Square payment successful for: ${item}` }] };
   }
 );

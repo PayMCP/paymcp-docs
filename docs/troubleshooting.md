@@ -25,7 +25,7 @@ Quick fixes for the most common PayMCP issues.
 
 **Error**: `Tool 'my_tool' not found` or similar MCP errors
 
-**Solution**: Include `ctx: Context` parameter:
+**Solution**: Include `ctx: Context` / `extra` parameter:
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -48,17 +48,17 @@ def process_user_input(input: str, ctx: Context) -> str:
 
 ```typescript
 // ❌ Wrong
-mcp.tool("process_user_input", {
-  price: { amount: 0.50, currency: "USD" }
+mcp.registerTool("process_user_input", {
+  _meta: { price: { amount: 0.50, currency: "USD" } }
 }, async ({ input }) => {
   return { content: [{ type: "text", text: "result" }] };
 });
 
 // ✅ Correct
-mcp.tool("process_user_input", {
+mcp.registerTool("process_user_input", {
   description: "Process user input and return result",
-  price: { amount: 0.50, currency: "USD" }
-}, async ({ input }, ctx) => {
+  _meta: { price: { amount: 0.50, currency: "USD" } }
+}, async ({ input }, extra) => {
   return { content: [{ type: "text", text: "result" }] };
 });
 ```
@@ -226,7 +226,7 @@ dotenv.config();
 
 **Cause**: MCP client doesn't support elicitation
 
-**Solution**: Use the TWO_STEP coordination mode instead:
+**Solution**: Use AUTO (default) to fall back to RESUBMIT, or switch to TWO_STEP for maximum compatibility:
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -235,7 +235,7 @@ dotenv.config();
 PayMCP(
     mcp,
     providers={...},
-    mode=Mode.TWO_STEP  # More compatible
+    mode=Mode.AUTO  # Falls back to RESUBMIT if elicitation is unsupported
 )
 ```
 
@@ -245,7 +245,7 @@ PayMCP(
 ```typescript
 installPayMCP(mcp, {
     providers: {...},
-    mode: Mode.TWO_STEP  // More compatible
+    mode: Mode.AUTO  // Falls back to RESUBMIT if elicitation is unsupported
 });
 ```
 
@@ -329,7 +329,7 @@ When reporting issues, include:
 1. **PayMCP version**: `paymcp.__version__`
 2. **MCP version**: `mcp.__version__` 
 3. **Provider**: Which provider you're using
-4. **Mode**: TWO_STEP, RESUBMIT, ELICITATION, etc.
+4. **Mode**: AUTO, TWO_STEP, RESUBMIT, ELICITATION, etc.
 5. **Error messages**: Full error text and stack traces
 6. **Code sample**: Minimal reproducible example
 

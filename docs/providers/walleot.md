@@ -69,14 +69,14 @@ def test_walleot_payment(message: str, ctx: Context) -> str:
 ```typescript
 import { z } from 'zod';
 
-mcp.tool(
+mcp.registerTool(
   "test_walleot_payment",
   {
     description: "Test Walleot payment integration",
     inputSchema: { message: z.string() },
-    price: { amount: 0.50, currency: "USD" },
+    _meta: { price: { amount: 0.50, currency: "USD" } },
   },
-  async ({ message }, ctx) => {
+  async ({ message }, extra) => {
     return { content: [{ type: "text", text: `Walleot payment successful! Message: ${message}` }] };
   }
 );

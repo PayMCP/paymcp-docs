@@ -23,7 +23,7 @@ class PayMCP:
         self,
         mcp_instance,
         providers: list = None,
-        mode: Mode = Mode.TWO_STEP,
+        mode: Mode = Mode.AUTO,
         state_store = None
     )
 ```
@@ -34,7 +34,7 @@ class PayMCP:
 ```typescript
 class PayMCP {
     constructor(
-        mcpInstance: FastMCP,
+        mcpInstance,
         options: {
             providers: Provider[],
             mode?: Mode,
@@ -51,10 +51,10 @@ class PayMCP {
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `mcp_instance` | `FastMCP` | Required | Your MCP server instance |
-| `providers` | `Union[dict, Iterable]` | `{}` | Payment provider configurations (see Provider Configuration section) |
-| `mode` | `Mode` | `TWO_STEP` | Coordination mode strategy |
-| `state_store` | `StateStore` | `InMemoryStateStore` | State Store for TWO_STEP mode |
+| `mcp_instance` | `MCP server instance` | Required | Your MCP server instance |
+| `providers` | `Union[dict, Iterable]` | Required | Payment provider configurations (see Provider Configuration section) |
+| `mode` | `Mode` | `AUTO` | Coordination mode strategy |
+| `state_store` | `StateStore` | `InMemoryStateStore` | State Store |
 
 #### Provider Configuration
 
@@ -94,7 +94,7 @@ from paymcp.providers import StripeProvider
 PayMCP(
     mcp,
     providers=[StripeProvider(apiKey="sk_test_...")],
-    mode=Mode.TWO_STEP
+    mode=Mode.AUTO
 )
 ```
 
@@ -107,7 +107,7 @@ import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, {
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    mode: Mode.TWO_STEP
+    mode: Mode.AUTO
 });
 ```
 
@@ -123,8 +123,10 @@ Enum defining available payment modes.
 
 ```python
 class Mode(str, Enum):
+    AUTO = "auto"
     TWO_STEP = "two_step"
     RESUBMIT = "resubmit"
+    X402 = "X402"
     ELICITATION = "elicitation" 
     PROGRESS = "progress"
     DYNAMIC_TOOLS = "dynamic_tools"
@@ -135,8 +137,10 @@ class Mode(str, Enum):
 
 ```typescript
 enum Mode {
+    AUTO = "auto",
     TWO_STEP = "two_step",
     RESUBMIT = "resubmit",
+    X402 = "X402",
     ELICITATION = "elicitation",
     PROGRESS = "progress",
     DYNAMIC_TOOLS = "dynamic_tools"
@@ -150,22 +154,20 @@ enum Mode {
 
 | Mode | Description | Best For |
 |------|-------------|----------|
-| `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility |
-| `RESUBMIT` | First call returns HTTP 402 with `payment_url` + `payment_id`; second call retries with the ID | Tool retries where the client handles user payment completion |
+| `AUTO` | Detects client capabilities; prefers `X402` when configured and supported, otherwise uses `ELICITATION` and falls back to `RESUBMIT` | Default, best balance of UX and compatibility |
+| `RESUBMIT` | First call returns Payment Required Error with `payment_url` + `payment_id`; second call retries with the ID | Tool retries where the client handles user payment completion |
 | `ELICITATION` | Payment link during execution | Real-time interactions |
+| `TWO_STEP` | Split into initiate/confirm steps | Maximum compatibility with older clients |
+| `X402` | Returns an x402 payment request; client replies with a payment signature | On-chain x402 payments with compatible clients |
 | `PROGRESS` | Experimental auto-checking of payment status | Real-time interactions |
 | `DYNAMIC_TOOLS` | Dynamically expose the next valid tool action | Clients with `listChanged` support |
 
 For more details about coordination mode concepts, see [Coordination Modes](./concepts-and-flows).
 
-**RESUBMIT specifics**
-1. First call: PayMCP invokes your tool without a `payment_id`, responds with HTTP 402 Payment Required that includes a `payment_url` and `payment_id`, and instructs the caller to retry after payment.
-2. Second call: The caller runs the same tool again with the provided `payment_id`; PayMCP verifies payment server-side and executes your original tool logic if the payment succeeded.
-
 
 ## StateStore
 
-By default, when using the `TWO_STEP` mode, PayMCP stores pending tool arguments in memory using a process-local `Map`. This is not durable and will not work across server restarts or multiple server instances (no horizontal scaling).
+By default, PayMCP stores pending tool arguments in memory using a process-local `Map`. This is not durable and will not work across server restarts or multiple server instances (no horizontal scaling).
 
 To enable durable and scalable state storage, you can provide a custom StateStore implementation. PayMCP includes a built-in RedisStateStore, which works with any Redis-compatible client.
 
@@ -291,13 +293,7 @@ installPayMCP(mcp, {
 </TabItem>
 </Tabs>
 
-This flexibility allows you to:
-- Mix different configuration styles in the same setup
-- Use custom providers alongside built-in ones
-- Dynamically configure providers at runtime
-- Share provider instances across multiple PayMCP setups
-
-## Custom Provider Development
+## Custom Providers
 
 ### BasePaymentProvider
 
@@ -321,6 +317,29 @@ class MyProvider(BasePaymentProvider):
     def get_payment_status(self, payment_id: str) -> str:
         """Return payment status: 'paid', 'pending', 'failed', or 'cancelled'"""
         return "paid"
+
+    # Optional: subscriptions
+    async def get_subscriptions(self, user_id: str, email: str | None = None) -> dict:
+        return {
+            "current_subscriptions": [],  # list of current user subscriptions
+            "available_subscriptions": [],  # list of available plans
+        }
+
+    # Optional: subscriptions
+    async def start_subscription(self, plan_id: str, user_id: str, email: str | None = None) -> dict:
+        return {
+            "message": "Subscription created",
+            "sessionId": "SESSION_ID",
+            "checkoutUrl": "https://example.com/checkout",
+        }
+
+    # Optional: subscriptions
+    async def cancel_subscription(self, subscription_id: str, user_id: str, email: str | None = None) -> dict:
+        return {
+            "message": "Subscription cancellation scheduled",
+            "canceled": True,
+            "endDate": "2025-12-31T00:00:00Z",
+        }
 ```
 
 </TabItem>
@@ -344,42 +363,53 @@ class MyProvider extends BasePaymentProvider {
         // Return payment status: 'paid', 'pending', 'failed', or 'cancelled'
         return "paid";
     }
+
+    // Optional: subscriptions
+    async getSubscriptions(userId: string, email?: string) {
+        return {
+            current_subscriptions: [], // list of current user subscriptions
+            available_subscriptions: [], // list of available plans
+        };
+    }
+
+    // Optional: subscriptions
+    async startSubscription(planId: string, userId: string, email?: string) {
+        return {
+            message: "Subscription created",
+            sessionId: "SESSION_ID",
+            checkoutUrl: "https://example.com/checkout",
+        };
+    }
+
+    // Optional: subscriptions
+    async cancelSubscription(subscriptionId: string, userId: string, email?: string) {
+        return {
+            message: "Subscription cancellation scheduled",
+            canceled: true,
+            endDate: "2025-12-31T00:00:00Z",
+        };
+    }
 }
 ```
 
 </TabItem>
 </Tabs>
 
-## Decorators
+## Price & Subscription Configuration
 
-### @price
+PayMCP supports two common gating mechanisms: **pay-per-request** pricing via `price`, and **access control** via `subscription` (require an active plan to use the tool). Python users can use decorators; in other languages you can set the same values via tool metadata.
 
-Decorator to add payment requirements to MCP tools.
 
-<Tabs>
-<TabItem value="python" label="Python">
+### Price
 
-```python
-def price(amount: float, currency: str = "USD")
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-// In registerTool options:
-price: { amount: number, currency?: string }
-```
-
-</TabItem>
-</Tabs>
+Define **pay-per-request** pricing for a tool. 
 
 #### Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `amount` | `float` | Required | Payment amount |
-| `currency` | `str` | `"USD"` | ISO 4217 currency code |
+| TS | PY | Type | Default | Description |
+|-----------|------|------|---------|-------------|
+| `amount` | `price` | `float` | Required | Payment amount |
+| `currency` | `currency` | `str` | `"USD"` | ISO 4217 currency code |
 
 #### Example
 
@@ -388,24 +418,31 @@ price: { amount: number, currency?: string }
 
 ```python
 @mcp.tool()
-@price(amount=0.50, currency="USD")
+@price(price=0.50, currency="USD")
 def generate_data_report(input: str, ctx: Context) -> str:
     """Generate a data report from input"""
     return f"Report: {input}"
+
+#Alternatively, you can pass pricing via tool metadata
+@mcp.tool(meta={"price":{"price":0.50, "currency"="USD"}})
+def generate_data_report(input: str, ctx: Context) -> str:
+    """Generate a data report from input"""
+    return f"Report: {input}"
+
 ```
 
 </TabItem>
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-mcp.tool(
+mcp.registerTool(
   "generate_data_report",
   {
     description: "Generate a data report from input",
     inputSchema: { input: z.string() },
-    price: { amount: 0.50, currency: "USD" },
+    _meta: { price: { amount: 0.50, currency: "USD" } },
   },
-  async ({ input }, ctx) => {
+  async ({ input }, extra) => {
     return { content: [{ type: "text", text: `Report: ${input}` }] };
   }
 );
@@ -413,6 +450,60 @@ mcp.tool(
 
 </TabItem>
 </Tabs>
+
+### @subscription
+
+Require an **active subscription plan** to use a tool (access control). 
+
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `plan` | `str \| list[str]` | Required | Accepted plan IDs from your provider |
+
+#### Example
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp import subscription
+
+@mcp.tool()
+@subscription(plan="price_pro_monthly")  # or a list of accepted plan IDs
+async def generate_report(ctx: Context) -> str:
+    return "Your report"
+
+#Alternatively, you can pass subscription info via tool metadata
+@mcp.tool(meta={"subscription":{"plan":"price_pro_monthly"}})
+def generate_data_report(input: str, ctx: Context) -> str:
+    """Generate a data report from input"""
+    return f"Report: {input}"
+
+
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+server.registerTool(
+  "generate_report",
+  {
+    title: "Generate report",
+    description: "Requires an active Pro subscription.",
+    _meta: { subscription: { plan: "price_pro_monthly" } }, // or an array of accepted plan ids
+  },
+  async (extra) => {
+    return { content: [{ type: "text", text: "Your report" }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
 
 ## Provider Configuration
 
@@ -422,7 +513,7 @@ mcp.tool(
 <TabItem value="python" label="Python">
 
 ```python
-providers = [StripeProvider(apiKey="sk_test_...")]
+providers = [StripeProvider(api_key="sk_test_...")]
 ```
 
 </TabItem>
@@ -437,9 +528,12 @@ providers = [new StripeProvider({ apiKey: "sk_test_..." })];
 
 #### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `apiKey` | `str` | Yes | Stripe secret key (sk_test_... or sk_live_...) |
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `apiKey` | `api_key` | `string` / `str` | Yes | Stripe secret key (`sk_test_...` or `sk_live_...`).  |
+| `successUrl` | `success_url` | `string` / `str` | No | Redirect URL after a successful Stripe Checkout. Supports `{CHECKOUT_SESSION_ID}` placeholder.  |
+| `cancelUrl` | `cancel_url` | `string` / `str` | No | Redirect URL if the user cancels payment in Stripe Checkout. |
+| `logger` | `logger` | `Logger`  | No | Optional logger instance to use for provider logs. |
 
 ### Walleot
 
@@ -449,7 +543,7 @@ providers = [new StripeProvider({ apiKey: "sk_test_..." })];
 ```python
 providers = {
     "walleot": {
-        "apiKey": str,              # Required: Walleot API key
+        "api_key": str,              # Required: Walleot API key
     }
 }
 ```
@@ -470,9 +564,10 @@ providers = {
 
 #### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `apiKey` | `str` | Yes | Walleot API key (sk_test_... or sk_live_...) |
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `apiKey` | `api_key` | `string` / `str` | Yes | Walleot API key. |
+| `logger` | `logger` | `Logger`  | No | Optional logger instance to use for provider logs. |
 
 ### PayPal
 
@@ -487,7 +582,7 @@ providers = [PayPalProvider(client_id="...", client_secret="...", sandbox=True)]
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-providers = [new PayPalProvider({ client_id: "...", client_secret: "...", sandbox: true })];
+providers = [new PayPalProvider({ clientId: "...", clientSecret: "...", sandbox: true })];
 ```
 
 </TabItem>
@@ -495,11 +590,14 @@ providers = [new PayPalProvider({ client_id: "...", client_secret: "...", sandbo
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `client_id` | `str` | Yes | - | PayPal application client ID |
-| `client_secret` | `str` | Yes | - | PayPal application client secret |
-| `sandbox` | `bool` | No | `True` | Use PayPal sandbox environment |
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `clientId` | `client_id` | `string` / `str` | Yes | PayPal application client ID. |
+| `clientSecret` | `client_secret` | `string` / `str` | Yes | PayPal application client secret. |
+| `sandbox` | `sandbox` | `boolean` / `bool` | No | If `true`, uses PayPal sandbox API (`api-m.sandbox.paypal.com`); otherwise uses production (`api-m.paypal.com`). Default: `true`. |
+| `successUrl` | `success_url` | `string` / `str` | No | URL the user is redirected to after successful approval/checkout. |
+| `cancelUrl` | `cancel_url` | `string` / `str` | No | URL the user is redirected to if they cancel payment. |
+| `logger` | `logger` | `Logger` | No | Optional logger instance to use for provider logs. |
 
 ### Square
 
@@ -511,9 +609,6 @@ providers = {
     "square": {
         "access_token": str,        # Required: Square access token
         "location_id": str,         # Required: Square location ID
-        "sandbox": bool,            # Optional: Use sandbox environment
-        "redirect_url": str,        # Optional: Redirect URL
-        "api_version": str,         # Optional: API version
     }
 }
 ```
@@ -524,11 +619,8 @@ providers = {
 ```typescript
 providers = {
     "square": {
-        access_token: string,        // Required: Square access token
-        location_id: string,         // Required: Square location ID
-        sandbox: boolean,            // Optional: Use sandbox environment
-        redirect_url: string,        // Optional: Redirect URL
-        api_version: string          // Optional: API version
+        accessToken: string,        // Required: Square access token
+        locationId: string,         // Required: Square location ID
     }
 };
 ```
@@ -538,13 +630,14 @@ providers = {
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `access_token` | `str` | Yes | - | Square access token |
-| `location_id` | `str` | Yes | - | Square location identifier |
-| `sandbox` | `bool` | No | `True` | Use Square sandbox environment |
-| `redirect_url` | `str` | No | - | Post-payment redirect URL |
-| `api_version` | `str` | No | `"2025-03-19"` | Square API version |
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `accessToken` | `access_token` | `string` / `str` | Yes | Square access token. |
+| `locationId` | `location_id` | `string` / `str` | Yes | Square location identifier. |
+| `sandbox` | `sandbox` | `boolean` / `bool` | No | If `true`, uses Square sandbox base URL; otherwise uses production base URL. Default: `true`. |
+| `redirectUrl` | `redirect_url` | `string` / `str` | No | URL Square redirects to after payment/checkout completion. |
+| `apiVersion` | `api_version` | `string` / `str` | No | Square API version. If not provided, Python uses `SQUARE_API_VERSION` env var, then defaults to `2025-03-19`. |
+| `logger` | `logger` | `Logger` | No | Optional logger instance to use for provider logs. |
 
 ### Adyen
 
@@ -556,7 +649,6 @@ providers = {
     "adyen": {
         "api_key": str,             # Required: Adyen API key
         "merchant_account": str,    # Required: Merchant account name
-        "sandbox": bool,            # Optional: Use test environment
     }
 }
 ```
@@ -567,9 +659,8 @@ providers = {
 ```typescript
 providers = {
     "adyen": {
-        api_key: string,             // Required: Adyen API key
-        merchant_account: string,   // Required: Merchant account name
-        sandbox: boolean             // Optional: Use test environment
+        apiKey: string,             // Required: Adyen API key
+        merchantAccount: string,    // Required: Merchant account name
     }
 };
 ```
@@ -579,11 +670,15 @@ providers = {
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `api_key` | `str` | Yes | - | Adyen API key |
-| `merchant_account` | `str` | Yes | - | Adyen merchant account identifier |
-| `sandbox` | `bool` | No | `True` | Use Adyen test environment |
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `apiKey` | `api_key` | `string` / `str` | Yes | Adyen API key.  |
+| `merchantAccount` | `merchant_account` | `string` / `str` | Yes | Adyen merchant account identifier.  |
+| `successUrl` | `return_url` | `string` / `str` | No | Return URL / redirect URL used by Adyen to return the user to your app with payment result info. |
+| `sandbox` | `sandbox` | `boolean` / `bool` | No | If `true`, uses Adyen test environment; otherwise uses live environment. Default: `false`. |
+| `logger` | `logger` | `Logger`  | No | Optional logger instance to use for provider logs. |
+
+
 
 ### Coinbase Commerce
 
@@ -598,7 +693,7 @@ providers = [CoinbaseProvider(api_key="...")]
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-providers = [new CoinbaseProvider({ api_key: "..." })];
+providers = [new CoinbaseProvider({ apiKey: "..." })];
 ```
 
 </TabItem>
@@ -606,30 +701,129 @@ providers = [new CoinbaseProvider({ api_key: "..." })];
 
 #### Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `api_key` | `str` | Yes | - | Coinbase Commerce API key |
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `apiKey` | `api_key` | `string` / `str` | Yes | Coinbase Commerce API key.  |
+| `successUrl` | `success_url` | `string` / `str` | No | URL the user is redirected to after successful payment completion.  |
+| `cancelUrl` | `cancel_url` | `string` / `str` | No | URL the user is redirected to if they cancel payment.  |
+| `confirmOnPending` | `confirm_on_pending` | `boolean` / `bool` | No | If `true`, treat `PENDING` status as paid for faster confirmation. **Risk:** rare cases may still fail or be cancelled after `PENDING`. Default: `false`. |
+| `logger` | `logger` | `Logger`  | No | Optional logger instance to use for provider logs. |
 
 
+### X402
 
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp.providers import X402Provider
+
+providers = [
+    X402Provider(
+        pay_to=[
+            {"address": "0xYourAddress", "network": "eip155:8453", "asset": "USDC"}
+        ],
+    )
+]
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { X402Provider } from 'paymcp/providers';
+
+const providers = [
+  new X402Provider({
+    payTo: [
+      { address: "0xYourAddress", network: "eip155:8453", asset: "USDC" }
+    ],
+  })
+];
+```
+
+</TabItem>
+</Tabs>
+
+#### Parameters
+
+| TS | PY | Type | Required | Description |
+|---|---|---|---|---|
+| `payTo` | `pay_to` | `PayTo[]` / `list[dict]` | Yes | Recipient list (see **PayTo item** below). |
+| `facilitator` | `facilitator` | `object` / `dict` | No | Facilitator settings (see **Facilitator** below). |
+| `resourceInfo` | `resource_info` | `object` / `dict` | No | Optional resource metadata shown to the client (see **ResourceInfo** below). |
+| `x402Version` | `x402_version` | `number` / `int` | No | X402 protocol version (default: `2`). |
+| `gasLimit` | `gas_limit` | `string` / `str` | No | Default gas limit applied to all `payTo` items (can be overridden per-item). |
+| `logger` | `logger` | `Logger` | No | Optional logger instance to use for provider logs. |
+
+##### PayTo item
+
+Each item in `payTo` / `pay_to` supports:
+
+| TS key | PY key | Type | Required | Default | Description |
+|---|---|---|---|---|---|
+| `address` | `address` | `string` / `str` | Yes | — | Recipient wallet address. |
+| `network` | `network` | `string` / `str` | No | `eip155:8453` | Network identifier (e.g. `eip155:8453`, `eip155:84532`, `solana-devnet`, `solana-mainnet`). |
+| `asset` | `asset` | `string` / `str` | No | `USDC` | Asset symbol/address. For Base networks, `USDC` is auto-mapped to the canonical contract address. |
+| `multiplier` | `multiplier` | `number` / `int` | No | `1_000_000` | Token base-unit multiplier (USDC = 6 decimals). |
+| `domainName` | `domainName` | `string` / `str` | No | `USD Coin` | EIP-712 domain name. Note: Base Sepolia USDC uses `USDC`. |
+| `domainVersion` | `domainVersion` | `string` / `str` | No | `2` | EIP-712 domain version (Circle USDC uses `2`). |
+| `gasLimit` | `gasLimit` | `string` / `str` | No | — | Optional per-recipient gas limit override. |
+
+##### Facilitator
+
+`facilitator` controls how PayMCP talks to the x402 facilitator (default: Coinbase CDP). You can either provide `apiKeyId` + `apiKeySecret` **or** a custom `createAuthHeaders` callback.
+
+| TS key | PY key | Type | Required | Description |
+|---|---|---|---|---|
+| `url` | `url` | `string` / `str` | No | Facilitator base URL (default: `https://api.cdp.coinbase.com/platform/v2/x402`). |
+| `apiKeyId` | `apiKeyId` | `string` / `str` | No | Coinbase CDP API key id (used to sign requests). |
+| `apiKeySecret` | `apiKeySecret` | `string` / `str` | No | Coinbase CDP API key secret (used to sign requests). |
+| `createAuthHeaders` | `createAuthHeaders` | `(opts) => Record<string,string>` / `callable` | No | Custom auth header function. Receives `{ host, path, method }` and should return headers (e.g. `{ Authorization: 'Bearer ...' }`). |
+
+
+##### ResourceInfo
+
+| TS key | PY key | Type | Required | Description |
+|---|---|---|---|---|
+| `url` | `url` | `string` / `str` | No | Resource URL that the payment is for (shown to the client). |
+| `description` | `description` | `string` / `str` | No | Human-readable description of the resource/charge. |
+| `mimeType` | `mimeType` | `string` / `str` | No | MIME type for the resource (e.g. `application/json`). |
 
 ## Context Requirements
 
-All priced tools must include a `ctx: Context` parameter:
+All priced tools must include a `ctx: Context` / `extra` parameter:
 
+<Tabs>
+<TabItem value="python" label="Python">
 ```python
 from mcp.server.fastmcp import Context
-
 @mcp.tool()
 @price(amount=1.00, currency="USD")
-def my_tool(input: str, ctx: Context) -> str:
-    # ctx parameter is required for PayMCP integration
+def my_tool(input: str, ctx: Context) -> str:  # ctx parameter is required for PayMCP integration
     return process_input(input)
 ```
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+```ts
+mcp.registerTool(
+  "my_tool",
+  {
+    description: "Description",
+    inputSchema: { prompt: z.string() },
+    _meta: { price: { amount: 0.50, currency: "USD" } },
+  },
+  async ({ prompt }, extra) => { //extra parameter is required for PayMCP integration
+    return process_input(input)
+  }
+);
+```
+</TabItem>
+</Tabs>
 
-### Why Context is Required
+### Why Context/Extra is Required
 
-The `Context` parameter provides:
+The `Context`/`extra` parameter provides:
 - User identification for payment tracking
 - Progress reporting capabilities (PROGRESS mode)
 - Elicitation support (ELICITATION mode)
@@ -667,50 +861,38 @@ PayMCP handles various error scenarios automatically:
 
 ### Multiple Providers
 
+In Mode.AUTO you can configure Multiple providers (One for clients who supports x402 protocol and one for all other clients)
+
+<Tabs>
+<TabItem value="python" label="Python">
+
 ```python
-# PayMCP uses the first provider by default
-# User will be able to choose how he wants to pay (coming soon)
 PayMCP(
     mcp,
-    providers={
-        "stripe": {"apiKey": "sk_..."},     
-        "walleot": {"apiKey": "wk_..."},     
-        "paypal": {                      
-            "client_id": "...",
-            "client_secret": "..."
-        }
-    }
+    providers=[
+        X402Provider(payTo=[{"address": "0xYourAddress"}]),
+        StripeProvider(apiKey="sk_test_...")
+    ],
+    mode=Mode.AUTO
 )
 ```
 
-### Environment Variables
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
 
-Use environment variables for secure credential storage:
-
-```python
-import os
-
-PayMCP(
-    mcp,
-    providers={
-        "stripe": {
-            "apiKey": os.getenv("STRIPE_SECRET_KEY"),
-            "success_url": os.getenv("STRIPE_SUCCESS_URL"),
-            "cancel_url": os.getenv("STRIPE_CANCEL_URL")
-        }
-    }
-)
+```typescript
+installPayMCP(mcp, {
+  providers: [
+    new StripeProvider({ apiKey: "sk_test_..." }),
+    new X402Provider({payTo:[{"address": "0xYourAddress"}]})
+  ],
+  mode: Mode.AUTO
+});
 ```
 
+</TabItem>
+</Tabs>
 
-## Version Information
-
-Current PayMCP version: Check with `paymcp.__version__`
-
-```python
-import paymcp
-print(f"PayMCP version: {paymcp.__version__}")
-```
 
 
 ## Next Steps

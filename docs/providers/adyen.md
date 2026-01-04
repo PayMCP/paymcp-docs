@@ -80,14 +80,14 @@ def test_adyen_payment(product: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-mcp.tool(
+mcp.registerTool(
   "test_adyen_payment",
   {
     description: "Test Adyen payment integration",
     inputSchema: { product: z.string() },
-    price: { amount: 5.00, currency: "EUR" },
+    _meta: { price: { amount: 5.00, currency: "EUR" } },
   },
-  async ({ product }, ctx) => {
+  async ({ product }, extra) => {
     return { content: [{ type: "text", text: `Adyen payment successful for: ${product}` }] };
   }
 );

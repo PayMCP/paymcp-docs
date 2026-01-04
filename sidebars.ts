@@ -21,13 +21,15 @@ const sidebars: SidebarsConfig = {
             'providers/square',
             'providers/adyen',
             'providers/coinbase',
+            'providers/x402',
           ],
         },
         {
           type: 'category',
           label: 'Examples',
           items: [
-            'examples/paid-image-generator',
+            'examples/pay-per-request',
+            'examples/subscription-demo',
           ],
         },
         'troubleshooting',

@@ -32,12 +32,20 @@ const providers: Provider[] = [
     Logo: require('@site/static/img/providers/adyen.svg').default,
   },
   {
-    name: 'Coinbase',
+    name: 'Coinbase Commerce',
     Logo: require('@site/static/img/providers/coinbase.svg').default,
   },
   {
     name: 'Walleot',
     Logo: require('@site/static/img/providers/walleot.svg').default,
+  },
+  {
+    name: 'Base USDC',
+    Logo: require('@site/static/img/providers/base.svg').default,
+  },
+  {
+    name: 'SOL USDC',
+    Logo: require('@site/static/img/providers/solana-usdc.svg').default,
   },
 ];
 

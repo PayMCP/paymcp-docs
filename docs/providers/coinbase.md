@@ -68,14 +68,14 @@ def test_crypto_payment(item: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-mcp.tool(
+mcp.registerTool(
   "test_crypto_payment",
   {
     description: "Test cryptocurrency payment",
     inputSchema: { item: z.string() },
-    price: { amount: 1.00, currency: "USD" },
+    _meta: { price: { amount: 1.00, currency: "USD" } },
   },
-  async ({ item }, ctx) => {
+  async ({ item }, extra) => {
     return { content: [{ type: "text", text: `Crypto payment successful for: ${item}` }] };
   }
 );
@@ -104,5 +104,4 @@ providers = {
 - **Coinbase Commerce Docs**: [commerce.coinbase.com/docs](https://commerce.coinbase.com/docs)
 - **PayMCP Issues**: [GitHub Issues](https://github.com/PayMCP/paymcp/issues)
 - **Coinbase Support**: Available in Commerce dashboard
-
 
