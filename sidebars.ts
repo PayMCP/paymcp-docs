@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
             'providers/square',
             'providers/adyen',
             'providers/coinbase',
+            'providers/x402',
           ],
         },
         {

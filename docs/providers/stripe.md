@@ -88,7 +88,7 @@ server.registerTool(
   {
     title: "Generate report",
     description: "Requires an active Pro subscription.",
-    subscription: { plan: "price_pro_monthly" }, // or an array of accepted plan ids
+    _meta: { subscription: { plan: "price_pro_monthly" } }, // or an array of accepted plan ids
   },
   async (extra) => {
     return { content: [{ type: "text", text: "Your report" }] };

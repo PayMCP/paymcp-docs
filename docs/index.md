@@ -12,10 +12,10 @@ PayMCP is a lightweight SDK that helps you add monetization to your MCP-based to
 
 ## Key Features
 
-- **Simple Integration** - For Python, add `@price(...)` decorators to your MCP tools. For TypeScript, add a `price` variable in `registerTool()` to enable payments
-- **Flexible Coordination Modes** - Choose between different payment modes (auto, two-step, resubmit, elicitation, progress, dynamic tools)
+- **Simple Integration** - For Python, add the `@price(...)` decorator to your MCP tools. For TypeScript, add price to tool metadata (`_meta.price`)
 - **Subscription Gating** - Gate tools behind active subscriptions
 - **Built-in and Custom Providers** - Most top payment providers are built in, and you can easily add custom providers
+- **Flexible Coordination Modes** - Choose between different payment modes (auto, resubmit, elicitation, two-step, x402, progress, dynamic tools)
 - **Framework Agnostic** - Easy integration with FastMCP or other MCP servers
 - **Production Ready** - Built for reliability and scale
 
@@ -47,24 +47,23 @@ def add_numbers(a: int, b: int, ctx: Context) -> int:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { FastMCP } from '@mcp/server-fastmcp';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
-import type { Context } from '@mcp/server-fastmcp';
 import { z } from 'zod';
 
-const mcp = new FastMCP("AI agent name");
+const mcp = new McpServer({name: "My AI Assistant"});
 
 installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
-mcp.tool(
+mcp.registerTool(
   "add_numbers",
   {
     description: "Add two numbers together",
     inputSchema: { a: z.number(), b: z.number() },
-    price: { amount: 1.00, currency: "USD" },
+    _meta: { price: { amount: 1.00, currency: "USD" } },
   },
-  async ({ a, b }, ctx) => {
+  async ({ a, b }, extra) => {
     return { content: [{ type: "text", text: String(a + b) }] };
   }
 );
@@ -78,9 +77,10 @@ mcp.tool(
 PayMCP supports multiple coordination modes to fit different use cases:
 
 - **[AUTO](./concepts-and-flows#auto-default)** - Detects client capabilities; uses elicitation if supported, otherwise falls back to resubmit (default)
-- **[TWO_STEP](./concepts-and-flows#two_step-flow)** - Split tool execution into initiate/confirm steps
-- **[RESUBMIT](./concepts-and-flows#resubmit-flow)** - First call returns HTTP 402 with a payment ID and payment URL; the retry completes once payment is verified
+- **[RESUBMIT](./concepts-and-flows#resubmit-flow)** - First call returns error with a payment ID and payment URL; the retry completes once payment is verified
 - **[ELICITATION](./concepts-and-flows#elicitation-flow)** - Payment link during tool execution (requires elicitation capability from MCP Clients)
+- **[TWO_STEP](./concepts-and-flows#two_step-flow)** - Split tool execution into initiate/confirm steps
+- **[X402](./concepts-and-flows#x402)** - On-chain x402 payment request with signed payment response (requires x402-capable clients)
 - **[PROGRESS](./concepts-and-flows#progress-flow)** - Experimental auto-checking of payment status (requires progress capability from MCP Clients)
 - **[DYNAMIC_TOOLS](./concepts-and-flows#dynamic_tools-flow)** - Dynamic tool lists that expose the next valid action (requires listChanged support from MCP Clients)
 
@@ -96,6 +96,7 @@ See the list of clients and their capabilities here: [https://modelcontextprotoc
 | **[Square](./providers/square)** | ✅ |  | Cards, in-person payments |
 | **[Adyen](./providers/adyen)** | ✅ |  | Global payments, 40+ countries |
 | **[Coinbase Commerce](./providers/coinbase)** | ✅ |  | Bitcoin, Ethereum, stablecoins |
+| **[X402](./providers/x402)** | ✅ |  | On-chain x402 payments (Base/Solana) |
 
 ## Getting Started
 

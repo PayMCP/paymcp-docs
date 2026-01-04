@@ -25,7 +25,7 @@ Quick fixes for the most common PayMCP issues.
 
 **Error**: `Tool 'my_tool' not found` or similar MCP errors
 
-**Solution**: Include `ctx: Context` parameter:
+**Solution**: Include `ctx: Context` / `extra` parameter:
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -48,17 +48,17 @@ def process_user_input(input: str, ctx: Context) -> str:
 
 ```typescript
 // ❌ Wrong
-mcp.tool("process_user_input", {
-  price: { amount: 0.50, currency: "USD" }
+mcp.registerTool("process_user_input", {
+  _meta: { price: { amount: 0.50, currency: "USD" } }
 }, async ({ input }) => {
   return { content: [{ type: "text", text: "result" }] };
 });
 
 // ✅ Correct
-mcp.tool("process_user_input", {
+mcp.registerTool("process_user_input", {
   description: "Process user input and return result",
-  price: { amount: 0.50, currency: "USD" }
-}, async ({ input }, ctx) => {
+  _meta: { price: { amount: 0.50, currency: "USD" } }
+}, async ({ input }, extra) => {
   return { content: [{ type: "text", text: "result" }] };
 });
 ```

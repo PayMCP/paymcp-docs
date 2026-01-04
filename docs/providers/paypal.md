@@ -80,14 +80,14 @@ def test_paypal_payment(message: str, ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-mcp.tool(
+mcp.registerTool(
   "test_paypal_payment",
   {
     description: "Test PayPal payment integration",
     inputSchema: { message: z.string() },
-    price: { amount: 1.00, currency: "USD" },
+    _meta: { price: { amount: 1.00, currency: "USD" } },
   },
-  async ({ message }, ctx) => {
+  async ({ message }, extra) => {
     return { content: [{ type: "text", text: `PayPal payment successful! Message: ${message}` }] };
   }
 );

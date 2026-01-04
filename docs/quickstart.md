@@ -35,9 +35,9 @@ npm install paymcp
 ### Requirements
 
 - Python 3.8+ or Node.js 16+
-- An MCP server framework (FastMCP recommended)  
+- An MCP server framework (Official MCP SDK recommended)  
 - **Hosted server environment** (not STDIO mode)
-- API keys from your chosen payment provider (kept secure on your server)
+- API keys from your chosen payment provider
 
 
 ## Basic Setup
@@ -59,13 +59,11 @@ mcp = FastMCP("My AI Assistant")
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-import { FastMCP } from '@mcp/server-fastmcp';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
-import type { Context } from '@mcp/server-fastmcp';
-import { z } from 'zod';
 
-const mcp = new FastMCP("My AI Assistant");
+const mcp = new McpServer({name: "My AI Assistant"});
 ```
 
 </TabItem>
@@ -110,14 +108,14 @@ def generate_ai_image(prompt: str, ctx: Context) -> str:
 ```typescript
 import { z } from 'zod';
 
-mcp.tool(
+mcp.registerTool(
   "generate_ai_image",
   {
     description: "Generate an AI image from a text prompt",
     inputSchema: { prompt: z.string() },
-    price: { amount: 0.50, currency: "USD" },
+    _meta: { price: { amount: 0.50, currency: "USD" } },
   },
-  async ({ prompt }, ctx) => {
+  async ({ prompt }, extra) => {
     return { content: [{ type: "text", text: `Generated image for: ${prompt}` }] };
   }
 );
@@ -151,26 +149,26 @@ def analyze_document(document: str, ctx: Context) -> dict:
 ```typescript
 import { z } from 'zod';
 
-mcp.tool(
+mcp.registerTool(
   "check_text_grammar",
   {
     description: "Check and correct grammar in text",
     inputSchema: { text: z.string() },
-    price: { amount: 0.05, currency: "USD" },
+    _meta: { price: { amount: 0.05, currency: "USD" } },
   },
-  async ({ text }, ctx) => {
+  async ({ text }, extra) => {
     return { content: [{ type: "text", text: correctedText }] };
   }
 );
 
-mcp.tool(
+mcp.registerTool(
   "analyze_document",
   {
     description: "Perform detailed document analysis",
     inputSchema: { document: z.string() },
-    price: { amount: 2.99, currency: "USD" },
+    _meta: { price: { amount: 2.99, currency: "USD" } },
   },
-  async ({ document }, ctx) => {
+  async ({ document }, extra) => {
     return { content: [{ type: "text", text: JSON.stringify(analysisResults) }] };
   }
 );
@@ -200,12 +198,12 @@ async def generate_report(ctx: Context) -> str:
 <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-server.registerTool(
+mcp.registerTool(
   "generate_report",
   {
     title: "Generate report",
     description: "Requires an active Pro subscription.",
-    subscription: { plan: "price_pro_monthly" }, // or an array of accepted plan ids
+    _meta: { subscription: { plan: "price_pro_monthly" } }, // or an array of accepted plan ids
   },
   async (extra) => {
     return { content: [{ type: "text", text: "Your report" }] };
@@ -218,11 +216,11 @@ server.registerTool(
 
 ## Coordination Modes
 
-Choose the mode (AUTO, TWO_STEP, RESUBMIT, ELICITATION, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
+Choose the mode (AUTO, RESUBMIT, ELICITATION, TWO_STEP, X402, PROGRESS, or DYNAMIC_TOOLS) that works best for your use case:
 
 ### AUTO (Default)
 
-Automatically detects client capabilities: uses `ELICITATION` if supported, otherwise falls back to `RESUBMIT`.
+Automatically detects client capabilities. If X402 is configured and supported by the client, it uses `X402`; otherwise it uses `ELICITATION` when supported and falls back to `RESUBMIT`.
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -238,30 +236,6 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.AUTO)
 installPayMCP(mcp, { 
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
     mode: Mode.AUTO
-});
-```
-
-</TabItem>
-</Tabs>
-
-### TWO_STEP
-
-Splits tool execution into two steps:
-
-<Tabs>
-<TabItem value="python" label="Python">
-
-```python
-PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.TWO_STEP)
-```
-
-</TabItem>
-<TabItem value="typescript" label="TypeScript">
-
-```typescript
-installPayMCP(mcp, { 
-    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    mode: Mode.TWO_STEP
 });
 ```
 
@@ -294,21 +268,19 @@ installPayMCP(mcp, {
 </Tabs>
 
 **Call sequence**
-1. First call: PayMCP invokes the tool without a `payment_id`, responds with HTTP 402 Payment Required containing a `payment_url` plus `payment_id`, and instructs the client to retry.
+1. First call: PayMCP invokes the tool without a `payment_id`, responds with Payment Required Error containing a `payment_url` plus `payment_id`, and instructs the client to retry.
 2. Second call: The client calls the same tool again with the returned `payment_id`; PayMCP validates payment server-side and runs your original tool logic if paid.
+
 
 ### ELICITATION (Interactive)
 
-For real-time interactions:
+For real-time interactions.
 
 <Tabs>
 <TabItem value="python" label="Python">
 
 ```python
 PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.ELICITATION)
-
-# Shows payment link immediately when tool is called (if supported by client)
-# Waits for payment confirmation before proceeding
 ```
 
 </TabItem>
@@ -319,26 +291,24 @@ installPayMCP(mcp, {
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
     mode: Mode.ELICITATION 
 });
-
-// Shows payment link immediately when tool is called (if supported by client)
-// Waits for payment confirmation before proceeding
 ```
 
 </TabItem>
 </Tabs>
 
-### PROGRESS (Experimental)
+Shows payment link immediately when tool is called (if supported by client)
+Waits for payment confirmation before proceeding
 
-For experimental auto-checking of payment status:
+
+### TWO_STEP
+
+Splits tool execution into two steps.
 
 <Tabs>
 <TabItem value="python" label="Python">
 
 ```python
-PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.PROGRESS)
-
-# Shows payment link and progress indicator (if supported by client)
-# Automatically proceeds when payment is received
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.TWO_STEP)
 ```
 
 </TabItem>
@@ -347,15 +317,66 @@ PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.PROGRESS
 ```typescript
 installPayMCP(mcp, { 
     providers: [new StripeProvider({ apiKey: "sk_test_..." })],
-    mode: Mode.PROGRESS 
+    mode: Mode.TWO_STEP
 });
-
-// Shows payment link and progress indicator (if supported by client)
-// Automatically proceeds when payment is received
 ```
 
 </TabItem>
 </Tabs>
+
+Confirmation tool will be added automatically.
+
+### X402 (On-chain)
+
+Use this mode only with an x402-capable client and the X402 provider. See the [X402 Provider guide](./providers/x402) for setup details.
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(mcp, providers=[X402Provider(pay_to=[{"address": "0xAddress"}],facilitator={"apiKeyId":"YOUR_CDP_KEY_ID","apiKeySecret":"YOUR_CDP_KEY_SECRET"})], mode=Mode.X402)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, { 
+    providers: [new X402Provider({"payTo":[{"address": "0xAddress"}],"facilitator":{"apiKeyId":"YOUR_CDP_KEY_ID","apiKeySecret":"YOUR_CDP_KEY_SECRET"}})],
+    mode: Mode.X402 
+});
+```
+
+</TabItem>
+</Tabs>
+
+
+
+### PROGRESS (Experimental)
+
+For experimental auto-checking of payment status.
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(mcp, providers=[StripeProvider(apiKey="sk_test_...")], mode=Mode.PROGRESS)
+```
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, { 
+    providers: [new StripeProvider({ apiKey: "sk_test_..." })],
+    mode: Mode.PROGRESS 
+});
+```
+
+</TabItem>
+</Tabs>
+
+Shows payment link and progress indicator (if supported by client)
+Automatically proceeds when payment is received
 
 ### DYNAMIC_TOOLS (Guided Tool Lists)
 
@@ -416,14 +437,13 @@ PayMCP(
 
 ```typescript
 import { createClient } from "redis";
-import { installPayMCP, RedisStateStore, Mode } from "paymcp";
+import { installPayMCP, RedisStateStore } from "paymcp";
 
 const redisClient = createClient({ url: "redis://localhost:6379" });
 await redisClient.connect();
 
-installPayMCP(server, {
+installPayMCP(mcp, {
   providers: [ /* ... */ ],
-  mode: Mode.TWO_STEP,
   stateStore: new RedisStateStore(redisClient),
 });
 ```
@@ -456,7 +476,7 @@ def test_payment_integration(name: str, ctx: Context) -> str:
     return f"Hello, {name}! Payment successful."
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="streamable-http")
 ```
 
 </TabItem>
@@ -464,27 +484,36 @@ if __name__ == "__main__":
 
 ```typescript
 // server.ts
-import { FastMCP } from '@mcp/server-fastmcp';
+import { McpServer, StdioServerTransport } from '@modelcontextprotocol/server';
 import { installPayMCP } from 'paymcp';
 import { StripeProvider } from 'paymcp/providers';
 import { z } from 'zod';
 
-const mcp = new FastMCP("Test Server");
+const mcp = new McpServer({name:"Test Server"});
 installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
-mcp.tool(
+mcp.registerTool(
   "test_payment_integration",
   {
     description: "Test payment integration with greeting",
     inputSchema: { name: z.string() },
-    price: { amount: 1.00, currency: "USD" },
+    _meta: { price: { amount: 1.00, currency: "USD" } },
   },
-  async ({ name }, ctx) => {
+  async ({ name }, extra) => {
     return { content: [{ type: "text", text: `Hello, ${name}! Payment successful.` }] };
   }
 );
 
-mcp.run();
+async function main() {
+    const transport = new StdioServerTransport();
+    await mcp.connect(transport);
+    console.log('MCP server is running...');
+}
+
+main().catch(error => {
+    console.error('Server error:', error);
+    process.exit(1);
+});
 ```
 
 </TabItem>
@@ -512,6 +541,8 @@ For testing, we recommend using the [MCP Inspector](https://github.com/modelcont
 - **Square**: Use sandbox environment
 - **Walleot**: Use test API keys
 - **Coinbase Commerce**: No sandbox is available, so test with very small amounts.
+- **USDC (Base)**: Use Base-sepolia network (eip155:84532)
+- **USDC (Solana)**: Use devnet network (solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1)
 
 ## Next Steps
 

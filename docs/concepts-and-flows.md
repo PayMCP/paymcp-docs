@@ -13,13 +13,12 @@ PayMCP provides flexible coordination modes to handle different interaction patt
 
 The `mode` parameter determines how clients interact with your paid tools. Each mode is optimized for different scenarios.
 
-> **Note:** In PayMCP v0.4.2, the configuration option `paymentFlow` was renamed to `mode` to better reflect its role. The former name still works for backward compatibility, but new integrations should prefer `mode`.
 
-Available modes include `AUTO`, `TWO_STEP`, `RESUBMIT`, `ELICITATION`, `PROGRESS`, and `DYNAMIC_TOOLS`.
+Available modes include `AUTO`, `RESUBMIT`, `ELICITATION`, `TWO_STEP`, `X402`, `PROGRESS`, and `DYNAMIC_TOOLS`.
 
-### AUTO (Default)
+### Mode.AUTO (Default)
 
-AUTO detects client capabilities and chooses the best flow automatically: it uses `ELICITATION` when supported, otherwise it falls back to `RESUBMIT`.
+AUTO detects client capabilities and chooses the best flow automatically. If an X402 provider is configured and the client supports x402, it uses `X402`. Otherwise it uses `ELICITATION` when supported, and falls back to `RESUBMIT`.
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -41,7 +40,40 @@ installPayMCP(mcp, {
 </TabItem>
 </Tabs>
 
-### TWO_STEP 
+If you configure both X402 and a traditional provider, AUTO will pick X402 when the client supports it:
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+PayMCP(
+    mcp,
+    providers=[
+        X402Provider(payTo=[{"address": "0xYourAddress"}]),
+        StripeProvider(apiKey="sk_test_...")
+    ],
+    mode=Mode.AUTO
+)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+installPayMCP(mcp, {
+  providers: [
+    new StripeProvider({ apiKey: "sk_test_..." }),
+    new X402Provider({payTo:[{"address": "0xYourAddress"}]})
+  ],
+  mode: Mode.AUTO
+});
+```
+
+</TabItem>
+</Tabs>
+
+
+### Mode.TWO_STEP 
 
 The two-step mode splits your tool execution into two tools: one to receive the task and return a payment link, and another one to confirm payment and execute the code. You don't need to change your function code — just write your tool as usual, and PayMCP will handle the split automatically.
 
@@ -68,14 +100,14 @@ import { StripeProvider } from 'paymcp/providers';
 
 installPayMCP(mcp, { providers: [new StripeProvider({ apiKey: "sk_test_..." })] });
 
-mcp.tool(
+mcp.registerTool(
   "generate_image",
   {
     description: "Generate an image based on user prompt",
     inputSchema: { prompt: z.string() },
-    price: { amount: 0.50, currency: "USD" },
+    _meta: { price: { amount: 0.50, currency: "USD" } },
   },
-  async ({ prompt }, ctx) => {
+  async ({ prompt }, extra) => {
     return { content: [{ type: "text", text: `Image generated for: ${prompt}` }] };
   }
 );
@@ -108,7 +140,7 @@ MCP server: Executes original generate_image() → Returns actual result
 **Disadvantages:**
 - Doubles the number of tools in your MCP server, which may confuse LLMs. It’s generally not recommended to have more than 3–4 tools in one MCP server.
 
-### RESUBMIT
+### Mode.RESUBMIT
 
 The RESUBMIT mode handles payment by requiring the client to call the same tool twice: once to trigger payment, and again to confirm it using a payment_id. This allows the tool to remain logically the same from the developer’s perspective, with minimal changes.
 
@@ -138,14 +170,14 @@ installPayMCP(mcp, {
   mode: Mode.RESUBMIT
 });
 
-mcp.tool(
+mcp.registerTool(
   "generate_contract",
   {
     description: "Generate a contract after payment",
     inputSchema: { prompt: z.string(), payment_id: z.string().optional() },
-    price: { amount: 1.25, currency: "USD" },
+    _meta: { price: { amount: 1.25, currency: "USD" } },
   },
-  async ({ prompt}, ctx) => {
+  async ({ prompt}, extra) => {
     return { content: [{ type: "text", text: `Contract generated for: ${prompt}` }] };
   }
 );
@@ -184,7 +216,111 @@ MCP server: Executes original code → Returns actual result
 - If client hides error details, users may miss the **payment link**
 - No server-side state — resubmitting with mismatched or reused `payment_id` will fail
 
-### ELICITATION
+
+### Mode.X402
+
+X402 is a specialization of `Mode.RESUBMIT` for on-chain payments using the [X402 protocol](https://www.x402.org).
+Instead of returning a payment URL + `payment_id`, PayMCP returns an X402 **payment request** payload.
+The client obtains a payer signature (either automatically via an agent-controlled wallet, or by prompting a user to sign in their existing crypto wallet) and then retries the same tool call with a **payment signature**.
+PayMCP verifies the signature and settles on-chain via a facilitator before returning the tool result.
+
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```python
+from paymcp.providers import X402Provider
+
+paymcp = PayMCP(mcp, providers=[
+    X402Provider(pay_to={"address":"0xAddress","network":"eip155:84532"},facilitator={"url":"https://www.x402.org/facilitator"}) #example for Base-sepolia (test network) with free facilitator
+  ], 
+  mode=Mode.X402)
+
+@mcp.tool()
+@price(amount=1.25, currency="USD")
+def generate_contract(prompt: str, ctx: Context) -> str:
+    return f"Contract generated for: {prompt}"
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { X402Provider } from 'paymcp/providers';
+
+const paymcp = installPayMCP(mcp, {
+  providers: [
+    new X402Provider({ "payTo":{"address":"0xAddress","network":"eip155:84532"},"facilitator":{"url":"https://www.x402.org/facilitator"}}) //example for Base-sepolia (test network) with free facilitator
+  ],
+  mode: Mode.X402
+});
+
+mcp.registerTool(
+  "generate_contract",
+  {
+    description: "Generate a contract after payment",
+    inputSchema: { prompt: z.string(), payment_id: z.string().optional() },
+    _meta: { price: { amount: 1.25, currency: "USD" } },
+  },
+  async ({ prompt}, extra) => {
+    return { content: [{ type: "text", text: `Contract generated for: ${prompt}` }] };
+  }
+);
+```
+
+</TabItem>
+</Tabs>
+
+
+**Key differences from RESUBMIT:**
+- Payment data is returned as an **X402 payment request** payload (not a URL).
+- The client retries with a **payment signature** provided either in headers (`payment-signature` or `x-payment`) or in `_meta["x402/payment"]` (PayMCP accepts both).
+- This flow supports **automatic agent-to-agent payments** as well as **user-approved payments** (the client can ask the user to sign the request).
+- Requires the X402 provider.
+- Only use with clients that support x402 (see https://www.x402.org).
+
+
+![X402 Diagram](/diagrams/X402.drawio.svg)
+
+**User Experience:**
+```
+User: "Draw a dog"
+LLM: tool call → generate_image("a dog")
+MCP Client: tool call → generate_image("a dog")
+MCP server: Returns Payment Required (X402 payment request)
+MCP Client: tool call → generate_image("a dog") + payment signature (header `payment-signature` / `x-payment` OR `_meta["x402/payment"]`)
+MCP server: Verifies signature, settles on-chain via facilitator → Returns actual result
+```
+
+**Transport (JSON-RPC vs HTTP 402):**
+- By default, the Payment Required information is included in the **JSON-RPC response body** so any MCP client can surface it.
+- If your client can read HTTP headers / status codes, you can enable a true **HTTP 402** response by installing the X402 middleware.
+
+<Tabs>
+<TabItem value="python" label="Python">
+```py
+app.add_middleware(paymcp.get_x402_middleware()) #FastAPI example
+```
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+```ts
+app.use('/mcp', paymcp.getX402Middleware()) #Express example
+```
+</TabItem>
+</Tabs>
+
+
+
+**Advantages:**
+- On-chain settlement with signed payment payloads
+- Single tool name without extra parameters
+
+**Disadvantages:**
+- Very limited client support
+- Requires facilitator access and on-chain gas for the payer
+- Unlike `RESUBMIT` (where the full 402 response body can be forwarded to the LLM), X402 requires the **MCP client** to understand the payment request and perform signing / retry — the LLM alone will not know how to handle an X402 payment request payload.
+
+### Mode.ELICITATION
 
 The elicitation mode temporarily pauses your tool execution, dynamically sends the user a payment link, and waits for payment confirmation before continuing. 
 
@@ -211,14 +347,14 @@ installPayMCP(mcp, {
     mode: Mode.ELICITATION 
 });
 
-mcp.tool(
+mcp.registerTool(
   "generate_image",
   {
     description: "Generate an image based on user prompt",
     inputSchema: { prompt: z.string() },
-    price: { amount: 0.25, currency: "USD" },
+    _meta: { price: { amount: 0.25, currency: "USD" } },
   },
-  async ({ prompt }, ctx) => {
+  async ({ prompt }, extra) => {
     return { content: [{ type: "text", text: `Image generated for: ${prompt}` }] };
   }
 );
@@ -252,7 +388,7 @@ MCP server: Executes generate_image() → Returns result
 - Requires MCP client support for elicitation. See which clients support it here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 
 
-### PROGRESS
+### Mode.PROGRESS
 
 The progress mode temporarily pauses your tool execution, shows a payment link with progress updates, and automatically resumes execution once the payment is completed.
 
@@ -280,14 +416,14 @@ installPayMCP(mcp, {
     mode: Mode.PROGRESS 
 });
 
-mcp.tool(
+mcp.registerTool(
   "generate_image",
   {
     description: "Generate an image",
     inputSchema: { prompt: z.string() },
-    price: { amount: 2.00, currency: "USD" },
+    _meta: { price: { amount: 2.00, currency: "USD" } },
   },
-  async ({ prompt }, ctx) => {
+  async ({ prompt }, extra) => {
     return { content: [{ type: "text", text: JSON.stringify({ image: `Generated image for: ${prompt}` }) }] };
   }
 );
@@ -321,7 +457,7 @@ MCP server: Executes generate_image() → Returns image URL
 - Timeout duration depends on the client
 - Requires progress reporting support that can display progress messages (not just percentages)
 
-### DYNAMIC_TOOLS 
+### Mode.DYNAMIC_TOOLS 
 
 The dynamic-tools mode changes the set of tools that are visible at specific points in the interaction. PayMCP temporarily exposes only the next valid action (e.g., temporarily expose `confirm_payment`, hide `generate_image`, and send a `listChanged` notification) so the LLM is strongly guided to proceed correctly. 
 
@@ -351,14 +487,14 @@ installPayMCP(mcp, {
   mode: Mode.DYNAMIC_TOOLS
 });
 
-mcp.tool(
+mcp.registerTool(
   "generate_image",
   {
     description: "Generate an image based on user prompt",
     inputSchema: { prompt: z.string() },
-    price: { amount: 0.75, currency: "USD" },
+    _meta: { price: { amount: 0.75, currency: "USD" } },
   },
-  async ({ prompt }, ctx) => {
+  async ({ prompt }, extra) => {
     return { content: [{ type: "text", text: `Image generated for: ${prompt}` }] };
   }
 );
