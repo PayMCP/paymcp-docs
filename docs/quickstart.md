@@ -334,7 +334,7 @@ Use this mode only with an x402-capable client and the X402 provider. See the [X
 <TabItem value="python" label="Python">
 
 ```python
-PayMCP(mcp, providers=[X402Provider(pay_to=[{"address": "0xAddress"}],facilitator={"apiKeyId":"YOUR_CDP_KEY_ID","apiKeySecret":"YOUR_CDP_KEY_SECRET"})], mode=Mode.X402)
+PayMCP(mcp, providers=[X402Provider(pay_to=[{"address": "0xAddress"}])], mode=Mode.X402)
 ```
 
 </TabItem>
@@ -342,13 +342,15 @@ PayMCP(mcp, providers=[X402Provider(pay_to=[{"address": "0xAddress"}],facilitato
 
 ```typescript
 installPayMCP(mcp, { 
-    providers: [new X402Provider({"payTo":[{"address": "0xAddress"}],"facilitator":{"apiKeyId":"YOUR_CDP_KEY_ID","apiKeySecret":"YOUR_CDP_KEY_SECRET"}})],
+    providers: [new X402Provider({"payTo":[{"address": "0xAddress"}]})],
     mode: Mode.X402 
 });
 ```
 
 </TabItem>
 </Tabs>
+
+By default PayMCP uses the public facilitator at `https://facilitator.paymcp.info` and no API keys are required. To change facilitators, set `facilitator.url`. The Coinbase CDP facilitator (`https://api.cdp.coinbase.com/platform/v2/x402`) requires `apiKeyId` and `apiKeySecret`.
 
 
 
