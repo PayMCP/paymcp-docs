@@ -772,11 +772,11 @@ Each item in `payTo` / `pay_to` supports:
 
 ##### Facilitator
 
-`facilitator` controls how PayMCP talks to the x402 facilitator (default: Coinbase CDP). You can either provide `apiKeyId` + `apiKeySecret` **or** a custom `createAuthHeaders` callback.
+`facilitator` controls how PayMCP talks to the x402 facilitator. The default is `https://facilitator.paymcp.info` and requires no API keys. Coinbase CDP requires `apiKeyId` + `apiKeySecret` or a custom `createAuthHeaders` callback.
 
 | TS key | PY key | Type | Required | Description |
 |---|---|---|---|---|
-| `url` | `url` | `string` / `str` | No | Facilitator base URL (default: `https://api.cdp.coinbase.com/platform/v2/x402`). |
+| `url` | `url` | `string` / `str` | No | Facilitator base URL (default: `https://facilitator.paymcp.info`). |
 | `apiKeyId` | `apiKeyId` | `string` / `str` | No | Coinbase CDP API key id (used to sign requests). |
 | `apiKeySecret` | `apiKeySecret` | `string` / `str` | No | Coinbase CDP API key secret (used to sign requests). |
 | `createAuthHeaders` | `createAuthHeaders` | `(opts) => Record<string,string>` / `callable` | No | Custom auth header function. Receives `{ host, path, method }` and should return headers (e.g. `{ Authorization: 'Bearer ...' }`). |

@@ -10,6 +10,8 @@ Provider-agnostic payment layer for MCP (Model Context Protocol) tools and agent
 
 PayMCP is a lightweight SDK that helps you add monetization to your MCP-based tools, servers, or agents. It supports multiple payment providers and integrates seamlessly with MCP's tool/resource interface.
 
+Paper: [https://zenodo.org/records/18158720](https://zenodo.org/records/18158720)
+
 ## Key Features
 
 - **Simple Integration** - For Python, add the `@price(...)` decorator to your MCP tools. For TypeScript, add price to tool metadata (`_meta.price`)
@@ -76,13 +78,13 @@ mcp.registerTool(
 
 PayMCP supports multiple coordination modes to fit different use cases:
 
-- **[AUTO](./concepts-and-flows#auto-default)** - Detects client capabilities; uses elicitation if supported, otherwise falls back to resubmit (default)
-- **[RESUBMIT](./concepts-and-flows#resubmit-flow)** - First call returns error with a payment ID and payment URL; the retry completes once payment is verified
-- **[ELICITATION](./concepts-and-flows#elicitation-flow)** - Payment link during tool execution (requires elicitation capability from MCP Clients)
-- **[TWO_STEP](./concepts-and-flows#two_step-flow)** - Split tool execution into initiate/confirm steps
-- **[X402](./concepts-and-flows#x402)** - On-chain x402 payment request with signed payment response (requires x402-capable clients)
-- **[PROGRESS](./concepts-and-flows#progress-flow)** - Experimental auto-checking of payment status (requires progress capability from MCP Clients)
-- **[DYNAMIC_TOOLS](./concepts-and-flows#dynamic_tools-flow)** - Dynamic tool lists that expose the next valid action (requires listChanged support from MCP Clients)
+- **[AUTO](./concepts-and-flows#modeauto-default)** - Detects client capabilities; uses elicitation if supported, otherwise falls back to resubmit (default)
+- **[RESUBMIT](./concepts-and-flows#moderesubmit)** - First call returns error with a payment ID and payment URL; the retry completes once payment is verified
+- **[ELICITATION](./concepts-and-flows#modeelicitation)** - Payment link during tool execution (requires elicitation capability from MCP Clients)
+- **[TWO_STEP](./concepts-and-flows#modetwo_step)** - Split tool execution into initiate/confirm steps
+- **[X402](./concepts-and-flows#modex402)** - On-chain x402 payment request with signed payment response (requires x402-capable clients)
+- **[PROGRESS](./concepts-and-flows#modeprogress)** - Experimental auto-checking of payment status (requires progress capability from MCP Clients)
+- **[DYNAMIC_TOOLS](./concepts-and-flows#modedynamic_tools)** - Dynamic tool lists that expose the next valid action (requires listChanged support from MCP Clients)
 
 See the list of clients and their capabilities here: [https://modelcontextprotocol.io/clients](https://modelcontextprotocol.io/clients)
 

@@ -232,8 +232,8 @@ PayMCP verifies the signature and settles on-chain via a facilitator before retu
 from paymcp.providers import X402Provider
 
 paymcp = PayMCP(mcp, providers=[
-    X402Provider(pay_to={"address":"0xAddress","network":"eip155:84532"},facilitator={"url":"https://www.x402.org/facilitator"}) #example for Base-sepolia (test network) with free facilitator
-  ], 
+    X402Provider(pay_to={"address":"0xAddress","network":"eip155:84532"},facilitator={"url":"https://www.x402.org/facilitator"}) #example for Base-sepolia (test network) with a custom facilitator
+  ],
   mode=Mode.X402)
 
 @mcp.tool()
@@ -250,7 +250,7 @@ import { X402Provider } from 'paymcp/providers';
 
 const paymcp = installPayMCP(mcp, {
   providers: [
-    new X402Provider({ "payTo":{"address":"0xAddress","network":"eip155:84532"},"facilitator":{"url":"https://www.x402.org/facilitator"}}) //example for Base-sepolia (test network) with free facilitator
+    new X402Provider({ "payTo":{"address":"0xAddress","network":"eip155:84532"},"facilitator":{"url":"https://www.x402.org/facilitator"}}) //example for Base-sepolia (test network) with a custom facilitator
   ],
   mode: Mode.X402
 });
@@ -270,6 +270,8 @@ mcp.registerTool(
 
 </TabItem>
 </Tabs>
+
+By default PayMCP uses `https://facilitator.paymcp.info` with no API keys. To change facilitators, set `facilitator.url`. The Coinbase CDP facilitator requires `apiKeyId` and `apiKeySecret`.
 
 
 **Key differences from RESUBMIT:**
