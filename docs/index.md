@@ -12,6 +12,10 @@ PayMCP is a lightweight SDK that helps you add monetization to your MCP-based to
 
 Paper: [https://zenodo.org/records/18158720](https://zenodo.org/records/18158720)
 
+:::note
+If you vibe-code with an AI agent that supports Skills, it's strongly recommended to install the **[monetization](./quickstart#ai-coding-agents-skills)** skill so the agent can scaffold PayMCP integration for you.
+:::
+
 ## Key Features
 
 - **Simple Integration** - For Python, add the `@price(...)` decorator to your MCP tools. For TypeScript, add price to tool metadata (`_meta.price`)

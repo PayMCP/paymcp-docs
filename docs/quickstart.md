@@ -39,6 +39,38 @@ npm install paymcp
 - **Hosted server environment** (not STDIO mode)
 - API keys from your chosen payment provider
 
+## AI Coding Agents (Skills)
+
+If you use an AI coding agent with Skills support, we recommend installing the **monetization** skill. Skills are folders of instructions and resources that your agent loads when relevant. They teach the agent how to perform specialized tasks like adding pricing, subscriptions, and provider configuration to MCP servers.
+
+### Install the monetization skill
+
+If you are using Claude Code, you can install the skill directly with:
+
+```bash
+/plugin marketplace add PayMCP/skills
+/plugin install paymcp@paymcp-skills
+```
+
+You can also use the [Vercel Skills CLI](https://skills.sh/) to install skills across different AI coding agents:
+
+```bash
+npx skills add https://github.com/PayMCP/skills --skill monetization
+```
+
+Or copy the skill folder into your agent's skills directory (varies by agent):
+
+| Agent | Skills directory (macOS/Linux) | Skills directory (Windows) |
+| --- | --- | --- |
+| Claude Code | `~/.claude/skills/` | `%USERPROFILE%\\.claude\\skills\\` |
+| VS Code and GitHub Copilot | `~/.copilot/skills/` | `%USERPROFILE%\\.copilot\\skills\\` |
+| Gemini CLI | `~/.gemini/skills/` | `%USERPROFILE%\\.gemini\\skills\\` |
+| Cline | `~/.cline/skills/` | `%USERPROFILE%\\.cline\\skills\\` |
+| Goose | `~/.config/goose/skills/` | `%USERPROFILE%\\.config\\goose\\skills\\` |
+| Codex | `~/.codex/skills/` | `%USERPROFILE%\\.codex\\skills\\` |
+
+After installation, you can simply ask your agent to add PayMCP monetization and follow its guided instructions.
+
 
 ## Basic Setup
 
